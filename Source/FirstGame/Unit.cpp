@@ -37,7 +37,7 @@ void AUnit::SetMove(FVector targetPos)
 
 	if (navSys == nullptr)
 		return;
-	UE_LOG(LogTemp, Warning, TEXT("-------------"));
+	
 	UNavigationPath* path = navSys->FindPathToLocationSynchronously(GetWorld(), GetActorLocation(), targetPos, NULL);
 
 	int pathCount = path->PathPoints.Num();

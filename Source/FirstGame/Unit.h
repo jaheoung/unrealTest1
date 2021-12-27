@@ -17,7 +17,7 @@ public:
 	AUnit();
 
 	virtual void ClearData();
-	// ÀÌ °´Ã¼¸¦ »èÁ¦ ½Ã ºÒ·¯ÁØ´Ù.
+	// ì´ ê°ì²´ë¥¼ ì‚­ì œ ì‹œ ë¶ˆëŸ¬ì¤€ë‹¤.
 	virtual void DestroyData();
 
 	uint32 uniqId;
@@ -40,7 +40,7 @@ protected:
 	FVector2D inputVector;
 	FVector2D lastInputVector;
 	FVector lastNextMovePathPos;
-	/// <summary>true ÀÌ¸é ´ÙÀ½Æ½¿¡ inputValue ¿¡ ´ëÇÑ È¸ÀüÀ» ÇÏÁö ¾Ê´Â´Ù.</summary>
+	/// <summary>true ì´ë©´ ë‹¤ìŒí‹±ì— inputValue ì— ëŒ€í•œ íšŒì „ì„ í•˜ì§€ ì•ŠëŠ”ë‹¤.</summary>
 	bool notNextTickInputRot;
 
 	// Called when the game starts or when spawned

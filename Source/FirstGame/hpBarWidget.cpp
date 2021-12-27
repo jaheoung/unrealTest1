@@ -14,8 +14,19 @@ bool UhpBarWidget::Initialize()
 {
 	Super::Initialize();
 
-	text->SetText(FText::Format(progressText, 80, 100));
-	hpBar->SetPercent(.8);
+	// text->SetText(FText::Format(progressText, 80, 100));
+	// hpBar->SetPercent(.8);
 
 	return true;
 }
+
+void UhpBarWidget::SetHp(const float& hp, const float& maxHp)
+{
+	if (hpBar == nullptr)
+		return;
+
+	hpBar->SetPercent(hp / maxHp);
+	text->SetText(FText::Format(progressText, hp, maxHp));
+	
+}
+

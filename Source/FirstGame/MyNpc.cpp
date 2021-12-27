@@ -7,6 +7,7 @@
 #include "hpBarWidget.h"
 #include "Components/WidgetComponent.h"
 #include "FirstGameGameModeBase.h"
+#include "MyNpcAnimInstance.h"
 
 AMyNpc::AMyNpc()
 {
@@ -15,7 +16,7 @@ AMyNpc::AMyNpc()
 	RootComponent = myMesh;
 
 	auto MeshAsset = ConstructorHelpers::FObjectFinder<USkeletalMesh>(
-		TEXT("SkeletalMesh'/Game/MyResource/MyUnit/myUnit_edit.myUnit_edit'"));
+		TEXT("SkeletalMesh'/Game/MyResource/MyNpc/myNpc.myNpc'"));
 
 	if (MeshAsset.Object != nullptr)
 	{
@@ -23,13 +24,12 @@ AMyNpc::AMyNpc()
 	}
 
 	auto getAnim = ConstructorHelpers::FClassFinder<UAnimInstance>(
-		TEXT("AnimBlueprint'/Game/MyResource/BP_MyNpcAnimCont.BP_MyNpcAnimCont_C'"));
+		TEXT("AnimBlueprint'/Game/MyResource/BP_MyNpcAnim_base.BP_MyNpcAnim_base_C'"));
 
 	if (getAnim.Succeeded())
 	{
 		myMesh->SetAnimInstanceClass(getAnim.Class);
 	}
-
 	
 	hpBarComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("myWidgetComponent"));
 	hpBarComp->AttachToComponent(RootComponent, FAttachmentTransformRules(EAttachmentRule::KeepRelative, true), GetAttachParentSocketName());
@@ -39,18 +39,41 @@ AMyNpc::AMyNpc()
 	{
 		hpBarComp->SetWidgetSpace(EWidgetSpace::World);
 		hpBarComp->SetWidgetClass(hpBarAsset.Class);
-		hpBarComp->SetWorldLocation(FVector(0, 0, 850)); // 상대적 소켓 위치로 해야할듯.
+		hpBarComp->SetWorldLocation(FVector(0, 0, 400)); // 상대적 소켓 위치로 해야할듯.
 		hpBarComp->SetDrawSize(FVector2D(200, 200));
-	
 	}
 	
 }
 
+void AMyNpc::SetAnim(NPC_STATE animState)
+{
+	if (myAnim == nullptr)
+	{
+		// getAnim 에 담긴 애니메이션 블루프린트 리소스는 UMyNpcAnimInstance 를 상속받아서 만들어짐.
+		myAnim = (UMyNpcAnimInstance*)(myMesh->GetAnimInstance());
+	}
+	
+	if (myAnim != nullptr)
+	{
+		myAnim->myNpcState = animState;
+	}
+}
+
+void AMyNpc::SetHp(const float& hp, const float& maxHp)
+{
+	if (hpBar == nullptr)
+		hpBar = Cast<UhpBarWidget>(hpBarComp->GetWidget());
+	
+	if (hpBar == nullptr)
+		return;
+
+	hpBar->SetHp(hp, maxHp);
+}
+
+
 void AMyNpc::ClearData()
 {
 	Super::ClearData();
-
-	
 }
 
 void AMyNpc::DestroyData()
@@ -68,8 +91,6 @@ void AMyNpc::DestroyData()
 
 	RootComponent = nullptr;
 }
-
-
 
 void AMyNpc::Tick(float DeltaTime)
 {

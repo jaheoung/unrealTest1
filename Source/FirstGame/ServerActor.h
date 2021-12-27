@@ -21,11 +21,13 @@ struct FUnitInfo
 	char unitType;
 	// 고유번호.
 	uint32_t uniqId;
-	// 위치 x.
+	// 현재 위치.
     float x;
-	// 위치 y.
+	// 현재 위치.
     float y;
-	// 방향.
+	// 현재 위치.
+	float z;
+	// 현재 위치.
     float rot;
 	// 유닛의 스케일.
     float unitScale;
@@ -35,7 +37,12 @@ struct FUnitInfo
 	// true 이면 위치 변경됨.
 	bool posChanged = false;
 
-	// 이하 이동관련.
+	float hp;
+	float maxHp;
+	bool isDie;
+
+	///------ 이하 이동 관련.
+	// z 는 고려하지 않는다.
 	FVector curPos;
 	TArray<FVector> myPath;
 	int curPathIndex;
@@ -44,9 +51,10 @@ struct FUnitInfo
 	class UNavigationSystemV1* navSys;
 	FVector lastDirNoNormal;
 
-	const FVector& SetPos(float _x, float _y)
+	// 현재위치 x,y,z 는 반영하지만 반환되는 방향은 x,y 로만 계산된다. (pc 는 z 값을 사용하지 않는다.)
+	const FVector& SetPos(float _x, float _y, float _z)
 	{
-		posChanged = x != _x || y != _y;
+		posChanged = x != _x || y != _y || z != _z;
 
 		lastDirNoNormal.X = x;
 		lastDirNoNormal.Y = y;
@@ -54,6 +62,7 @@ struct FUnitInfo
 		
 		x = _x;
 		y = _y;
+		z = _z;
 		
 		curPos.X = _x;
 		curPos.Y = _y;
@@ -73,7 +82,7 @@ struct FUnitInfo
 	{
 		unitType = 0;
 		uniqId = 0;
-		SetPos(0, 0);
+		SetPos(0, 0, 0);
 		rot = 0;
 		unitScale = 0;
 		isSpawned = false;
@@ -83,6 +92,9 @@ struct FUnitInfo
 		lastTargetPoint.Y = 0;
 		lastTargetPoint.Z = 0;
 		navSys = nullptr;
+		hp = 0;
+		maxHp = 0;
+		isDie = false;
 	}
 
 	void StopMovePath()
@@ -146,6 +158,7 @@ struct FUnitInfo
 		if (curPathIndex > 0 && curPathIndex < myPath.Num())
 		{
 			FVector nextPos = myPath[curPathIndex];
+			float backZ = nextPos.Z;
 			curPos.Z = nextPos.Z = 0;
 
 			FVector dirVec = nextPos - curPos;
@@ -154,7 +167,7 @@ struct FUnitInfo
 
 			if (dirVec.SizeSquared() <= checkDis)
 			{
-				dir = SetPos(nextPos.X, nextPos.Y).GetSafeNormal();
+				dir = SetPos(nextPos.X, nextPos.Y, backZ).GetSafeNormal();
 				rot = GetRot(dir);
 				// 현재 목적지 도착, 다음 목적지 설정.
 				++curPathIndex;
@@ -163,7 +176,7 @@ struct FUnitInfo
 			{
 				dirVec.Normalize();
 				nextPos = curPos + (dirVec * moveSpeed);
-				dir = SetPos(nextPos.X, nextPos.Y).GetSafeNormal();
+				dir = SetPos(nextPos.X, nextPos.Y, backZ).GetSafeNormal();
 				rot = GetRot(dir);
 			}
 
@@ -180,7 +193,7 @@ struct FUnitInfo
 	{
 		unitType = info.unitType;
 		uniqId = info.uniqId;
-		SetPos(info.x, info.y);
+		SetPos(info.x, info.y, info.z);
 		rot = info.rot;
 		unitScale = info.unitScale;
 		isSpawned = info.isSpawned;
@@ -263,6 +276,7 @@ enum PACKET_TYPE
 	NPC_APPEAR,
 	NPC_DISAPPEAR,
 	NPC_MOVE,
+	UPDATE_UNIT_INFO,
 };
 
 enum PACKET_RET
@@ -350,11 +364,13 @@ public:
 	}
 };
 
+// npc 이동.
 struct FAnsNpcMovePacket : public FAnsPacket
 {
 	uint32_t uniqId;
 	float x;
 	float y;
+	float z;
 	float rot;
 	
 	virtual PACKET_TYPE GetPacketType() override
@@ -369,7 +385,32 @@ struct FAnsNpcMovePacket : public FAnsPacket
 		uniqId = 0;
 		x = 0;
 		y = 0;
+		z = 0;
 		rot = 0;
+	}
+};
+
+// 갱신할 유닛 정보가 있을때 사용. (move 보다는 덜 사용한다.)
+struct FAnsUpdateUnitInfoPacket : public FAnsPacket
+{
+	uint32_t uniqId;
+	float hp;
+	float maxHp;
+	float isDie;
+	
+	virtual PACKET_TYPE GetPacketType() override
+	{
+		return PACKET_TYPE::UPDATE_UNIT_INFO;
+	}
+
+	virtual void ClearData() override
+	{
+		FAnsPacket::ClearData();
+		
+		uniqId = 0;
+		hp = 0;
+		maxHp = 0;
+		isDie = 0;
 	}
 };
 
@@ -526,6 +567,7 @@ private:
 	void SendAppearNPC(TSharedPtr<FNPCInfo> npcInfo);
 	void SendDisappearPC(const uint32_t& uniqId);
 	void SendDisappearNPC(const uint32_t& uniqId);
+	void SendUpdateUnitInfo(const uint32_t& uniqId, const float& hp, const float& maxHp, const bool& isDie);
 
 	// 내 시야 거리.
 	float mySqrSight = 500.0 * 500.0;

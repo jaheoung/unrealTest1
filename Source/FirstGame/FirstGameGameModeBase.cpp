@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "FirstGameGameModeBase.h"
+
+#include "hpBarWidget.h"
 #include "MyCamActor.h"
 #include "MyUnit.h"
 #include "MyNpc.h"
@@ -119,7 +121,7 @@ void AFirstGameGameModeBase::AppearMyPlayer(TSharedPtr<FAnsPCAppearPacket> packe
 	myUnit->uniqId = pcInfo.uniqId;
 	
 	myUnit->SetActorScale3D(FVector(myUnitScale, myUnitScale, myUnitScale));
-	myUnit->SetActorLocation(FVector(pcInfo.x, pcInfo.y, 0));
+	myUnit->SetActorLocation(FVector(pcInfo.x, pcInfo.y, pcInfo.z));
 
 	myUnit->Equip(pcInfo.weaponType);
 	myUnit->SetAnim(pcInfo.weaponType);
@@ -139,12 +141,13 @@ void AFirstGameGameModeBase::AppearNpc(TSharedPtr<FAnsNPCAppearPacket> packet)
 
 	if (npc != nullptr)
 	{
-		npc->SetActorLocation(FVector(npcInfo.x, npcInfo.y, 0));
+		npc->SetActorLocation(FVector(npcInfo.x, npcInfo.y, npcInfo.z));
 		npc->SetActorScale3D(FVector(npcInfo.unitScale, npcInfo.unitScale, npcInfo.unitScale));
 		FRotator r = npc->GetActorRotation();
 		r.Yaw += npcInfo.rot;
 		npc->SetActorRotation(r);
 		npc->uniqId = npcInfo.uniqId;
+		npc->SetHp(npcInfo.hp, npcInfo.maxHp);
 		npcMap.Add(npcInfo.uniqId, npc);
 	}
 }
@@ -154,15 +157,11 @@ void AFirstGameGameModeBase::DisappearNpc(TSharedPtr<FAnsNPCDisappearPacket> pac
 	if (packet == nullptr || packet.IsValid() == false)
 		return;
 	
-	// 나중에 재사용으로 바꿔야함!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 	AMyNpc** getNpc = npcMap.Find(packet->info.uniqId);
 
 	if (getNpc != nullptr)
 	{
 		RestoreNpc(*getNpc);
-		// (*getNpc)->DestroyData();
-		// GetWorld()->DestroyActor(*getNpc);
 		npcMap.Remove(packet->info.uniqId);
 	}
 }
@@ -176,10 +175,25 @@ void AFirstGameGameModeBase::NpcMove(TSharedPtr<FAnsNpcMovePacket> packet)
 
 	if (getNpc != nullptr)
 	{
-		(*getNpc)->SetActorLocation(FVector(packet->x, packet->y, 0));
+		(*getNpc)->SetActorLocation(FVector(packet->x, packet->y, packet->z));
 		(*getNpc)->SetActorRotation(FRotator(0, packet->rot, 0));
+		(*getNpc)->SetAnim(NPC_STATE::RUN);
 	}
 }
+
+void AFirstGameGameModeBase::UpdateUnitInfo(TSharedPtr<FAnsUpdateUnitInfoPacket> packet)
+{
+	if (packet == nullptr || packet.IsValid() == false)
+		return;
+
+	AMyNpc** getNpc = npcMap.Find(packet->uniqId);
+
+	if (getNpc != nullptr)
+	{
+		(*getNpc)->SetHp(packet->hp, packet->maxHp);
+	}
+}
+
 
 
 AMyNpc* AFirstGameGameModeBase::CreateNpc()
@@ -247,6 +261,11 @@ void AFirstGameGameModeBase::AnsCallback(const TSharedPtr<FAnsPacket> packet)
 	case PACKET_TYPE::NPC_MOVE:
 		{
 			NpcMove(StaticCastSharedPtr<FAnsNpcMovePacket>(packet));
+		}
+		break;
+	case PACKET_TYPE::UPDATE_UNIT_INFO:
+		{
+			UpdateUnitInfo(StaticCastSharedPtr<FAnsUpdateUnitInfoPacket>(packet));
 		}
 		break;
 	}

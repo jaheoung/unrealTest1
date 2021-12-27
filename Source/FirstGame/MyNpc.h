@@ -6,6 +6,14 @@
 #include "Unit.h"
 #include "MyNpc.generated.h"
 
+UENUM(BlueprintType)
+enum class NPC_STATE : uint8
+{
+	IDLE = 0,
+	RUN = 1,
+	ATTACK = 2,
+};
+
 /**
  * 
  */
@@ -16,9 +24,15 @@ class FIRSTGAME_API AMyNpc : public AUnit
 	
 public:
 	USkeletalMeshComponent* myMesh;
+	class UMyNpcAnimInstance* myAnim;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="MyNpc")
 	class UWidgetComponent* hpBarComp;
+
+	class UhpBarWidget* hpBar;
+
+	void SetAnim(NPC_STATE animState);
+	void SetHp(const float& hp, const float& maxHp);
 
 	AMyNpc();
 

@@ -22,9 +22,9 @@ void AServerActor::BeginPlay()
 	{
 		myUnit->ClearData();
 		myUnit->uniqId = GetUniqueID();
-		myUnit->SetPos(0, 0);
+		myUnit->SetPos(0, 0, 0);
 		myUnit->rot = 0;
-		myUnit->weaponType = WEAPON_TYPE::SINGLE_GUN;
+		myUnit->weaponType = WEAPON_TYPE::SINGLE_SWORD;
 		myUnit->unitScale = 0.3f;
 		myUnit->unitType = 1;
 		pcMap.Emplace(myUnit->uniqId, myUnit);
@@ -39,9 +39,12 @@ void AServerActor::BeginPlay()
 
 		getNpc->ClearData();
 		getNpc->uniqId = GetUnitUniqId();
-		getNpc->SetPos(FMath::RandRange(-2000, 2000), FMath::RandRange(-2000, 2000));
+		getNpc->SetPos(FMath::RandRange(-2000, 2000), FMath::RandRange(-2000, 2000), 0);
 		getNpc->rot = FMath::RandRange(0, 360);
-		getNpc->unitScale = 0.19;
+		getNpc->unitScale = 0.3;
+		getNpc->hp = 100;
+		getNpc->maxHp = 300;
+		getNpc->isDie = false;
 		npcMap.Emplace(getNpc->uniqId, getNpc);
 	}
 	
@@ -132,6 +135,7 @@ TSharedPtr<T> AServerActor::CreateAnsPacket(PACKET_TYPE type)
 		case PACKET_TYPE::NPC_APPEAR: getValue = TSharedPtr<FAnsNPCAppearPacket>(new FAnsNPCAppearPacket()); break;
 		case PACKET_TYPE::NPC_DISAPPEAR: getValue = TSharedPtr<FAnsNPCDisappearPacket>(new FAnsNPCDisappearPacket()); break;
 		case PACKET_TYPE::NPC_MOVE: getValue = TSharedPtr<FAnsNpcMovePacket>(new FAnsNpcMovePacket()); break;
+		case PACKET_TYPE::UPDATE_UNIT_INFO: getValue = TSharedPtr<FAnsUpdateUnitInfoPacket>(new FAnsUpdateUnitInfoPacket()); break;
 		}
 
 		if (getValue != nullptr)
@@ -315,7 +319,7 @@ void AServerActor::PCMoveProcess(TSharedPtr<FAskPacket> packet)
 	if (getPcInfo == nullptr)
 		return;
 
-	getPcInfo->SetPos(getPacket->x, getPacket->y);
+	getPcInfo->SetPos(getPacket->x, getPacket->y, 0);
 }
 
 void AServerActor::SendNPCMove(TSharedPtr<FNPCInfo> npcInfo)
@@ -329,6 +333,7 @@ void AServerActor::SendNPCMove(TSharedPtr<FNPCInfo> npcInfo)
 		packet->uniqId = npcInfo->uniqId;
 		packet->x = npcInfo->x;
 		packet->y = npcInfo->y;
+		packet->z = npcInfo->z;
 		packet->rot = npcInfo->rot;
 		RegAnsPacket(packet);
 	}
@@ -347,11 +352,14 @@ void AServerActor::SendAppearPC(TSharedPtr<FPCInfo> pcInfo)
 		FPCInfo& getPcInfo = packet->info.pcInfo;
 		getPcInfo.ClearData();
 		getPcInfo.uniqId = pcInfo->uniqId;
-		getPcInfo.SetPos(pcInfo->x, pcInfo->y);
+		getPcInfo.SetPos(pcInfo->x, pcInfo->y, pcInfo->z);
 		getPcInfo.rot = pcInfo->rot;
 		getPcInfo.weaponType = pcInfo->weaponType;
 		getPcInfo.unitScale = pcInfo->unitScale;
 		getPcInfo.unitType = pcInfo->unitType;
+		getPcInfo.hp = pcInfo->hp;
+		getPcInfo.maxHp = pcInfo->maxHp;
+		getPcInfo.isDie = pcInfo->isDie;
 		RegAnsPacket(packet);
 	}
 }
@@ -368,9 +376,12 @@ void AServerActor::SendAppearNPC(TSharedPtr<FNPCInfo> npcInfo)
 		
 		getNpcInfo.ClearData();
 		getNpcInfo.uniqId = npcInfo->uniqId;
-		getNpcInfo.SetPos(npcInfo->x, npcInfo->y);
+		getNpcInfo.SetPos(npcInfo->x, npcInfo->y, npcInfo->z);
 		getNpcInfo.rot = npcInfo->rot;
 		getNpcInfo.unitScale = npcInfo->unitScale;
+		getNpcInfo.hp = npcInfo->hp;
+		getNpcInfo.maxHp = npcInfo->maxHp;
+		getNpcInfo.isDie = npcInfo->isDie;
 		RegAnsPacket(packet);
 	}
 }
@@ -400,6 +411,23 @@ void AServerActor::SendDisappearNPC(const uint32_t& uniqId)
 		RegAnsPacket(packet);
 	}
 }
+
+void AServerActor::SendUpdateUnitInfo(const uint32_t& uniqId, const float& hp, const float& maxHp, const bool& isDie)
+{
+	TSharedPtr<FAnsUpdateUnitInfoPacket> packet = CreateAnsPacket<FAnsUpdateUnitInfoPacket>(PACKET_TYPE::UPDATE_UNIT_INFO);
+
+	if (packet != nullptr && packet.IsValid())
+	{
+		packet->ClearData();
+		packet->ret = PACKET_RET::SUCCESS;
+		packet->uniqId = uniqId;
+		packet->hp = hp;
+		packet->maxHp = maxHp;
+		packet->isDie = isDie;
+		RegAnsPacket(packet);
+	}
+}
+
 
 TSharedPtr<FPCInfo> AServerActor::CreatePC()
 {

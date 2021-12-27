@@ -20,5 +20,7 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* text;
 
+	void SetHp(const float& hp, const float& maxHp);
+
 	virtual bool Initialize() override;
 };

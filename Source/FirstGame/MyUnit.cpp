@@ -111,6 +111,7 @@ void AMyUnit::SetAnim(WEAPON_TYPE weaponType)
 		if (getAnim != nullptr)
 			myMesh->SetAnimInstanceClass(*getAnim);
 
+		// animMap 에 담긴 애니메이션 블루프린트 리소스는 UMyUnitAnimInstance 를 상속받아서 만들어짐.
 		myAnim = (UMyUnitAnimInstance*)(myMesh->GetAnimInstance());
 	}
 

@@ -52,5 +52,6 @@ private:
 	void AppearNpc(TSharedPtr<FAnsNPCAppearPacket> packet);
 	void DisappearNpc(TSharedPtr<FAnsNPCDisappearPacket> packet);
 	void NpcMove(TSharedPtr<FAnsNpcMovePacket> packet);
+	void UpdateUnitInfo(TSharedPtr<FAnsUpdateUnitInfoPacket> packet);
 	
 };
