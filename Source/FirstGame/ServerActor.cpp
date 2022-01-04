@@ -3,6 +3,8 @@
 
 #include "ServerActor.h"
 
+#include "DrawDebugHelpers.h"
+
 // Sets default values
 AServerActor::AServerActor()
 {
@@ -42,81 +44,27 @@ void AServerActor::BeginPlay()
 		getNpc->SetPos(FMath::RandRange(-2000, 2000), FMath::RandRange(-2000, 2000), 0);
 		getNpc->rot = FMath::RandRange(0, 360);
 		getNpc->unitScale = 0.3;
-		getNpc->hp = 100;
+		getNpc->hp = 300;
 		getNpc->maxHp = 300;
 		getNpc->isDie = false;
 		npcMap.Emplace(getNpc->uniqId, getNpc);
 	}
-	
-	// test spawn... 나중엔 pcmap 구현하고 복사본을 넘겨야 할까?????????????????????????????????
-	// TSharedPtr<FAnsPCAppearPacket> pcSpawnPacket = CreateAnsPacket<FAnsPCAppearPacket>(PACKET_TYPE::PC_APPEAR);
-	//
-	// if (pcSpawnPacket != nullptr && pcSpawnPacket.IsValid())
-	// {
-	// 	pcSpawnPacket->ret = PACKET_RET::SUCCESS;
-	// 	pcSpawnPacket->ClearData();
-	// 	
-	// 	FPCInfo& pcInfo = pcSpawnPacket->info.pcInfo;
-	//
-	// 	pcInfo.ClearData();
-	// 	pcInfo.uniqId = GetUniqueID();
-	// 	pcInfo.x = 0;
-	// 	pcInfo.y = 0;
-	// 	pcInfo.dir = 0;
-	// 	pcInfo.weaponType = WEAPON_TYPE::SINGLE_SWORD;
-	// 	pcInfo.unitScale = 0.3;
-	// 	pcInfo.unitType = 1;
-	// 	RegAnsPacket(pcSpawnPacket);
-	// }
-	//
-	//
-	// for (int i = 0; i < 30; ++i)
-	// {
-	// 	TSharedPtr<FAnsNPCAppearPacket> npcSpawnPacket = CreateAnsPacket<FAnsNPCAppearPacket>(PACKET_TYPE::NPC_APPEAR);
-	//
-	// 	if (npcSpawnPacket != nullptr && npcSpawnPacket.IsValid())
-	// 	{
-	// 		npcSpawnPacket->ClearData();
-	// 		FNPCInfo& npcInfo = npcSpawnPacket->info.npcInfo;
-	//
-	// 		npcInfo.ClearData();
-	// 		npcInfo.uniqId = GetUnitUniqId();
-	// 		npcInfo.x = FMath::RandRange(-1000, 1000);
-	// 		npcInfo.y = FMath::RandRange(-1000, 1000);
-	// 		npcInfo.dir = FMath::RandRange(0, 360);
-	// 		npcInfo.unitScale = 0.19;
-	// 		RegAnsPacket(npcSpawnPacket);
-	// 	}
-	// }
-}
 
-// template<typename T>
-// TSharedPtr<T> AServerActor::CreateAskPacket(PACKET_TYPE type)
-// {
-// 	TArray<TSharedPtr<FAskPacket>>* getArray = askPacketPool.Find(type);
-//
-// 	TSharedPtr<FAskPacket> getValue = nullptr;
-// 	
-// 	if (getArray == nullptr || getArray->Num() == 0)
-// 	{
-// 		switch (type)
-// 		{
-// 		case PACKET_TYPE::SKILL: getValue = TSharedPtr<FAskSkillPacket>(new FAskSkillPacket()); break;
-// 		case PACKET_TYPE::PC_MOVE: getValue = TSharedPtr<FAskPCMovePacket>(new FAskPCMovePacket()); break;
-// 		}
-//
-// 		if (getValue != nullptr)
-// 			return StaticCastSharedPtr<T>(getValue);
-// 	}
-// 	else
-// 	{
-// 		getValue = getArray->Pop();
-// 		if (getValue != nullptr && getValue.IsValid())
-// 			return StaticCastSharedPtr<T>(getValue);
-// 	}
-//
-// 	return nullptr;
-// }
+	for (int i = 0; i < 50; ++i)
+	{
+		TSharedPtr<FInteractionObjInfo> getInteractionObj = CreateInteraction();
+
+		if (getInteractionObj == nullptr || getInteractionObj.IsValid() == false)
+			continue;
+
+		getInteractionObj->ClearData();
+		getInteractionObj->uniqId = GetUnitUniqId();
+		getInteractionObj->x = FMath::RandRange(-2000, 2000);
+		getInteractionObj->y = FMath::RandRange(-2000, 2000);
+		getInteractionObj->rot = FMath::RandRange(0, 360);
+		interactionMap.Emplace(getInteractionObj->uniqId, getInteractionObj);
+	}
+}
 
 template<typename T>
 TSharedPtr<T> AServerActor::CreateAnsPacket(PACKET_TYPE type)
@@ -136,6 +84,9 @@ TSharedPtr<T> AServerActor::CreateAnsPacket(PACKET_TYPE type)
 		case PACKET_TYPE::NPC_DISAPPEAR: getValue = TSharedPtr<FAnsNPCDisappearPacket>(new FAnsNPCDisappearPacket()); break;
 		case PACKET_TYPE::NPC_MOVE: getValue = TSharedPtr<FAnsNpcMovePacket>(new FAnsNpcMovePacket()); break;
 		case PACKET_TYPE::UPDATE_UNIT_INFO: getValue = TSharedPtr<FAnsUpdateUnitInfoPacket>(new FAnsUpdateUnitInfoPacket()); break;
+		case PACKET_TYPE::INTERACTION_APPEAR: getValue = TSharedPtr<FAnsInteractionAppearPacket>(new FAnsInteractionAppearPacket()); break;
+		case PACKET_TYPE::INTERACTION_DISAPPEAR: getValue = TSharedPtr<FAnsInteractionDisappearPacket>(new FAnsInteractionDisappearPacket()); break;
+		case PACKET_TYPE::UPDATE_INVENTORY: getValue = TSharedPtr<FAnsUpdateInventoryPacket>(new FAnsUpdateInventoryPacket()); break;
 		}
 
 		if (getValue != nullptr)
@@ -268,6 +219,36 @@ void AServerActor::Tick(float DeltaTime)
 					SendNPCMove(npcInfo);
 			}
 		}
+		
+		for (const auto& entry:interactionMap)
+		{
+			TSharedPtr<FInteractionObjInfo> interactionInfo = entry.Value;
+
+			if (interactionInfo == nullptr || interactionInfo.IsValid() == false)
+				continue;
+
+			// 시야 처리.
+			if (myUnit->GetSqrDis(interactionInfo->x, interactionInfo->y) < mySqrSight)
+			{
+				// 시야 안.
+				if (interactionInfo->isSpawned == false)
+				{
+					// 스폰시킨다.
+					SendAppearInteractionObj(interactionInfo);
+					interactionInfo->isSpawned = true;
+				}
+			}
+			else
+			{
+				//  시야 밖.
+				if (interactionInfo->isSpawned)
+				{
+					// 화면에서 제거 한다.
+					SendDisappearInteractionObj(interactionInfo->uniqId);
+					interactionInfo->isSpawned = false;
+				}
+			}
+		}
 	}
 
 	// 패킷 처리.
@@ -278,9 +259,11 @@ void AServerActor::Tick(float DeltaTime)
 		{
 			switch (getAskPacket->GetPacketType())
 			{
-				case PACKET_TYPE::SKILL: SkillProcess(getAskPacket); break;
-				case PACKET_TYPE::PC_MOVE: PCMoveProcess(getAskPacket); break;
+				case PACKET_TYPE::SKILL: AnsSkill(getAskPacket); break;
+				case PACKET_TYPE::PC_MOVE: AnsPCMove(getAskPacket); break;
+				case PACKET_TYPE::INTERACTION: AnsInteraction(getAskPacket); break;
 			}
+			RestoreAskPacket(getAskPacket);
 		}
 	}
 
@@ -297,30 +280,182 @@ void AServerActor::Tick(float DeltaTime)
 	}
 }
 
-void AServerActor::SkillProcess(TSharedPtr<FAskPacket> packet)
+void AServerActor::AnsSkill(TSharedPtr<FAskPacket> packet)
 {
 	TSharedPtr<FAskSkillPacket> getPacket = StaticCastSharedPtr<FAskSkillPacket>(packet);
 
 	if (getPacket == nullptr || getPacket.IsValid() == false)
 		return;
 
-	// 스킬 처리 후.
+	if (getPacket->isPc)
+	{
+		float skillDisSqr = 0.0;
+		float skillHalfAngle = 0.0;
+		float skillDamage = 0.0;
+		switch (getPacket->skillType)
+		{
+		case SKILL_TYPE::PC_DEFAULT_SKILL:
+			skillDisSqr = 300 * 300;
+			skillHalfAngle = 30;
+			skillDamage = 100;
+			break;
+		}
+		
+		
+		TSharedPtr<FPCInfo>* getPc = pcMap.Find(getPacket->castUnitUniqId);
+
+		if (getPc != nullptr && (*getPc) != nullptr && (*getPc).IsValid())
+		{
+			FVector castPos = FVector((*getPc)->x, (*getPc)->y, 0);
+			FVector castDirNormal = (*getPc)->lastDirNoNormal.GetSafeNormal(); // 패킷에서 받아오려고 했는데 클라에 정보가 없음.
+			for (auto elem : npcMap)
+			{
+				TSharedPtr<FNPCInfo> npc = elem.Value;
+
+				if (npc == nullptr || npc.IsValid() == false)
+					continue;
+
+				FVector npcPos = FVector(npc->x, npc->y, 0);
+				FVector targetDirVec = npcPos - castPos;
+
+				float dot = FVector::DotProduct(castDirNormal, targetDirVec); 
+
+				// 전방 체크.
+				if (dot < 0.0) 
+					continue;
+
+				//test
+				/*
+				DrawDebugLine(GetWorld(), npcPos, npcPos + FVector::UpVector * 1000, FColor::Green, false, 2);
+				FVector myv = castPos;
+				FVector targetv = myv + (castDirNormal * FMath::Sqrt(skillDisSqr));
+				targetv.Z = myv.Z = 80;
+				DrawDebugLine(GetWorld(), myv, targetv, FColor::Red, false, 2);
+
+				FVector rightRotV = castDirNormal.RotateAngleAxis(skillHalfAngle, FVector::UpVector) * FMath::Sqrt(skillDisSqr);
+				FVector leftRotV = castDirNormal.RotateAngleAxis(-skillHalfAngle, FVector::UpVector) * FMath::Sqrt(skillDisSqr);
+
+				DrawDebugLine(GetWorld(), myv, myv + rightRotV, FColor::Red, false, 2);
+				DrawDebugLine(GetWorld(), myv, myv + leftRotV, FColor::Red, false, 2);
+				*/
+
+				// 거리 체크.
+				if (targetDirVec.SizeSquared() > skillDisSqr)
+					continue;
+
+				// 각도 체크.
+				float rad = FMath::Acos(dot / targetDirVec.Size());
+				float angle = FMath::RadiansToDegrees(rad);
+
+				if (angle > skillHalfAngle)
+					continue;
+
+				npc->hp -= skillDamage;
+
+				if (npc->hp <= 0)
+				{
+					tempDieNpcs.Emplace(npc);
+				}
+				else
+				{
+					TSharedPtr<FAnsUpdateUnitInfoPacket> ansPacket = CreateAnsPacket<FAnsUpdateUnitInfoPacket>(PACKET_TYPE::UPDATE_UNIT_INFO);
+
+					if (ansPacket != nullptr && ansPacket.IsValid())
+					{
+						ansPacket->ClearData();
+						ansPacket->ret = PACKET_RET::SUCCESS;
+						ansPacket->uniqId = npc->uniqId;
+						ansPacket->hp = npc->hp;
+						ansPacket->maxHp = npc->maxHp;
+		
+						RegAnsPacket(ansPacket);
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		
+	}
+
+	// 죽은 유닛 제거.
+	if (tempDieNpcs.Num() > 0)
+	{
+		for (const auto& elem : tempDieNpcs)
+		{
+			SendDisappearNPC(elem->uniqId);
+			RestoreNPC(elem);
+			npcMap.Remove(elem->uniqId);
+		}
+
+		tempDieNpcs.Empty();
+	}
 }
 
-void AServerActor::PCMoveProcess(TSharedPtr<FAskPacket> packet)
+void AServerActor::AnsPCMove(TSharedPtr<FAskPacket> packet)
 {
 	TSharedPtr<FAskPCMovePacket> getPacket = StaticCastSharedPtr<FAskPCMovePacket>(packet);
 
 	if (getPacket == nullptr || getPacket.IsValid() == false)
 		return;
 
-	TSharedPtr<FPCInfo> getPcInfo = *pcMap.Find(getPacket->uniqId);
+	TSharedPtr<FPCInfo>* getPcInfo = pcMap.Find(getPacket->uniqId);
 
-	if (getPcInfo == nullptr)
+	if (getPcInfo == nullptr || (*getPcInfo) == nullptr || (*getPcInfo).IsValid() == false)
 		return;
 
-	getPcInfo->SetPos(getPacket->x, getPacket->y, 0);
+	(*getPcInfo)->SetPos(getPacket->x, getPacket->y, 0);
 }
+
+void AServerActor::AnsInteraction(TSharedPtr<FAskPacket> packet)
+{
+	TSharedPtr<FAskInteractionPacket> getPacket = StaticCastSharedPtr<FAskInteractionPacket>(packet);
+
+	if (getPacket == nullptr || getPacket.IsValid() == false)
+		return;
+
+	TSharedPtr<FInteractionObjInfo>* getInteractionInfo = interactionMap.Find(getPacket->uniqId);
+
+	if (getInteractionInfo == nullptr || (*getInteractionInfo) == nullptr || (*getInteractionInfo).IsValid() == false)
+		return;
+
+	// 테스트 아이템 획득.
+	bool find = false;
+	for (const auto elem : myItems)
+	{
+		if (elem->type == ITEM_TYPE::MEAT)
+		{
+			++elem->count;
+			find = true;
+			break;
+		}
+	}
+
+	if (find == false)
+	{
+		TSharedPtr<FMyItemInfo> newItem = CreateItem();
+
+		if (newItem != nullptr || newItem.IsValid())
+		{
+			newItem->uniqId = GetUnitUniqId();
+			newItem->type = ITEM_TYPE::MEAT;
+			newItem->count = 1;
+			myItems.Add(newItem);
+		}
+	}
+
+	SendUpdateInventory();
+	
+	
+
+	SendDisappearInteractionObj(getPacket->uniqId);
+	
+	(*getInteractionInfo)->ClearData();
+	RestoreInteraction((*getInteractionInfo));
+	interactionMap.Remove(getPacket->uniqId);
+}
+
 
 void AServerActor::SendNPCMove(TSharedPtr<FNPCInfo> npcInfo)
 {
@@ -423,10 +558,76 @@ void AServerActor::SendUpdateUnitInfo(const uint32_t& uniqId, const float& hp, c
 		packet->uniqId = uniqId;
 		packet->hp = hp;
 		packet->maxHp = maxHp;
-		packet->isDie = isDie;
 		RegAnsPacket(packet);
 	}
 }
+
+void AServerActor::SendAppearInteractionObj(TSharedPtr<FInteractionObjInfo> interactionInfo)
+{
+	if (interactionInfo == nullptr || interactionInfo.IsValid() == false)
+		return;
+	
+	TSharedPtr<FAnsInteractionAppearPacket> packet = CreateAnsPacket<FAnsInteractionAppearPacket>(PACKET_TYPE::INTERACTION_APPEAR);
+
+	if (packet != nullptr && packet.IsValid())
+	{
+		packet->ClearData();
+		packet->ret = PACKET_RET::SUCCESS;
+		packet->uniqId = interactionInfo->uniqId;
+		packet->x = interactionInfo->x;
+		packet->y = interactionInfo->y;
+		packet->rot = interactionInfo->rot;
+		RegAnsPacket(packet);
+	}
+}
+
+void AServerActor::SendDisappearInteractionObj(const uint32_t& uniqId)
+{
+	TSharedPtr<FAnsInteractionDisappearPacket> packet = CreateAnsPacket<FAnsInteractionDisappearPacket>(PACKET_TYPE::INTERACTION_DISAPPEAR);
+
+	if (packet != nullptr && packet.IsValid())
+	{
+		packet->ClearData();
+		packet->ret = PACKET_RET::SUCCESS;
+		packet->uniqId = uniqId;
+		RegAnsPacket(packet);
+	}
+}
+
+void AServerActor::SendUpdateInventory()
+{
+	TSharedPtr<FAnsUpdateInventoryPacket> packet = CreateAnsPacket<FAnsUpdateInventoryPacket>(PACKET_TYPE::UPDATE_INVENTORY);
+
+	if (packet != nullptr && packet.IsValid())
+	{
+		int makeCount = myItems.Num() - packet->items.Num();
+
+		if (makeCount > 0)
+		{
+			for (int i = 0; i < makeCount; ++i)
+			{
+				packet->items.Emplace(*(new FMyItemInfo()));
+			}
+		}
+
+		packet->ClearData();
+		packet->ret = PACKET_RET::SUCCESS;
+		packet->itemCount = myItems.Num();
+		
+		for (int i = 0; i < packet->itemCount; ++i)
+		{
+			FMyItemInfo& sendInfo = packet->items[i];
+			TSharedPtr<FMyItemInfo> myInfo = myItems[i];
+
+			sendInfo.uniqId = myInfo->uniqId;
+			sendInfo.type = myInfo->type;
+			sendInfo.count = myInfo->count;
+		}
+		
+		RegAnsPacket(packet);
+	}
+}
+
 
 
 TSharedPtr<FPCInfo> AServerActor::CreatePC()
@@ -478,8 +679,65 @@ TSharedPtr<FNPCInfo> AServerActor::CreateNPC()
 
 void AServerActor::RestoreNPC(TSharedPtr<FNPCInfo> npcInfo)
 {
+	npcInfo->ClearData();
 	npcPool.Enqueue(npcInfo);
 }
+
+TSharedPtr<FInteractionObjInfo> AServerActor::CreateInteraction()
+{
+	if (interactionPool.IsEmpty())
+	{
+		TSharedPtr<FInteractionObjInfo> getValue = TSharedPtr<FInteractionObjInfo>(new FInteractionObjInfo());
+		getValue->ClearData();
+		return getValue;
+	}
+	else
+	{
+		TSharedPtr<FInteractionObjInfo> getValue;
+		if (interactionPool.Dequeue(getValue))
+		{
+			getValue->ClearData();
+			return getValue;
+		}
+	}
+
+	return nullptr;
+}
+
+void AServerActor::RestoreInteraction(TSharedPtr<FInteractionObjInfo> interactionInfo)
+{
+	interactionPool.Enqueue(interactionInfo);
+}
+
+TSharedPtr<FMyItemInfo> AServerActor::CreateItem()
+{
+	if (itemPool.IsEmpty())
+	{
+		TSharedPtr<FMyItemInfo> getValue = TSharedPtr<FMyItemInfo>(new FMyItemInfo());
+		getValue->ClearData();
+		return getValue;
+	}
+	else
+	{
+		TSharedPtr<FMyItemInfo> getValue;
+		if (itemPool.Dequeue(getValue))
+		{
+			getValue->ClearData();
+			return getValue;
+		}
+	}
+
+	return nullptr;
+}
+
+void AServerActor::RestoreItem(TSharedPtr<FMyItemInfo> itemInfo)
+{
+	itemPool.Enqueue(itemInfo);
+}
+
+
+
+
 
 
 uint32_t AServerActor::GetUnitUniqId()

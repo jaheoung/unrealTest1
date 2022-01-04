@@ -15,6 +15,26 @@
 
 //------------------------------------------------- 전달 구조체 시작.
 
+enum class ITEM_TYPE
+{
+	NONE,
+	MEAT,
+};
+
+struct FMyItemInfo
+{
+	uint32_t uniqId;
+	ITEM_TYPE type;
+	uint32_t count;
+
+	void ClearData()
+	{
+		uniqId = 0;
+		type = ITEM_TYPE::NONE;
+		count = 0;
+	}
+};
+
 struct FUnitInfo
 {
 	// 1 : pc, 2 : npc
@@ -47,7 +67,7 @@ struct FUnitInfo
 	TArray<FVector> myPath;
 	int curPathIndex;
 	FVector lastTargetPoint;
-	float moveSpeed = 1.5f;
+	float moveSpeed = 0.9f;
 	class UNavigationSystemV1* navSys;
 	FVector lastDirNoNormal;
 
@@ -263,10 +283,35 @@ struct FNPCDisappearInfo
 	uint32_t uniqId;
 };
 
+struct FInteractionObjInfo
+{
+	uint32_t uniqId;
+	float x;
+	float y;
+	float rot;
+	bool isSpawned;
+
+	void ClearData()
+	{
+		uniqId = 0;
+		x = 0;
+		y = 0;
+		rot = 0;
+		isSpawned = false;
+	}
+};
+
+enum class SKILL_TYPE
+{
+	NONE,
+	PC_DEFAULT_SKILL,
+	NPC_DEFAULT_SKILL,
+};
+
 //------------------------------------------------- 전달 구조체 끝.
 //
 //------------------------------------------------- 패킷정보 시작.
-enum PACKET_TYPE
+enum class PACKET_TYPE
 {
 	NONE,
 	SKILL,
@@ -277,9 +322,13 @@ enum PACKET_TYPE
 	NPC_DISAPPEAR,
 	NPC_MOVE,
 	UPDATE_UNIT_INFO,
+	INTERACTION_APPEAR,
+	INTERACTION_DISAPPEAR,
+	INTERACTION,
+	UPDATE_INVENTORY,
 };
 
-enum PACKET_RET
+enum class PACKET_RET
 {
 	SUCCESS,
 	FAIL,
@@ -316,6 +365,12 @@ struct FAnsPacket
 // 스킬 요청.
 struct FAskSkillPacket : public FAskPacket
 {
+public:
+	bool isPc;
+	uint32_t castUnitUniqId;
+	SKILL_TYPE skillType;
+	FVector dirNormal;
+
 	virtual PACKET_TYPE GetPacketType() override
 	{
 		return PACKET_TYPE::SKILL;
@@ -324,12 +379,22 @@ struct FAskSkillPacket : public FAskPacket
 	virtual void ClearData() override
 	{
 		FAskPacket::ClearData();
+
+		isPc = false;
+		castUnitUniqId = 0;
+		skillType = SKILL_TYPE::NONE;
+		dirNormal.X = 0;
+		dirNormal.Y = 0;
+		dirNormal.Z = 0;
 	}
 };
 
 // 스킬 응답.
 struct FAnsSkillPacket : public FAnsPacket
 {
+	uint32_t targetUnitUniqId;
+	float targetHp;
+	
 	virtual PACKET_TYPE GetPacketType() override
 	{
 		return PACKET_TYPE::SKILL;
@@ -396,7 +461,6 @@ struct FAnsUpdateUnitInfoPacket : public FAnsPacket
 	uint32_t uniqId;
 	float hp;
 	float maxHp;
-	float isDie;
 	
 	virtual PACKET_TYPE GetPacketType() override
 	{
@@ -410,7 +474,6 @@ struct FAnsUpdateUnitInfoPacket : public FAnsPacket
 		uniqId = 0;
 		hp = 0;
 		maxHp = 0;
-		isDie = 0;
 	}
 };
 
@@ -490,6 +553,89 @@ public:
 	}
 };
 
+// 인터렉션 오브젝트 스폰.
+struct FAnsInteractionAppearPacket : public FAnsPacket
+{
+public:
+	uint32_t uniqId;
+	float x;
+	float y;
+	float rot;
+	
+	virtual PACKET_TYPE GetPacketType() override
+	{
+		return PACKET_TYPE::INTERACTION_APPEAR;
+	}
+
+	virtual void ClearData() override
+	{
+		FAnsPacket::ClearData();
+		uniqId = 0;
+		x = 0;
+		y = 0;
+		rot = 0;
+	}
+};
+
+// 인터렉션 오브젝트 제거.
+struct FAnsInteractionDisappearPacket : public FAnsPacket
+{
+public:
+	uint32_t uniqId;
+	
+	virtual PACKET_TYPE GetPacketType() override
+	{
+		return PACKET_TYPE::INTERACTION_DISAPPEAR;
+	}
+
+	virtual void ClearData() override
+	{
+		FAnsPacket::ClearData();
+		uniqId = 0;
+	}
+};
+
+// 인터렉션 요청.
+struct FAskInteractionPacket : public FAskPacket
+{
+public:
+	uint32_t uniqId;
+	
+	virtual PACKET_TYPE GetPacketType() override
+	{
+		return PACKET_TYPE::INTERACTION;
+	}
+
+	virtual void ClearData() override
+	{
+		FAskPacket::ClearData();
+
+		uniqId = 0;
+	}
+};
+
+struct FAnsUpdateInventoryPacket : public FAnsPacket
+{
+public:
+	int itemCount;
+	TArray<FMyItemInfo> items;
+	
+	virtual PACKET_TYPE GetPacketType() override
+	{
+		return PACKET_TYPE::UPDATE_INVENTORY;
+	}
+
+	virtual void ClearData() override
+	{
+		FAnsPacket::ClearData();
+
+		for (auto& elem : items)
+		{
+			elem.ClearData();
+		}
+	}
+};
+
 
 //------------------------------------------------- 패킷정보 끝.
 
@@ -504,7 +650,7 @@ public:
 	// Sets default values for this actor's properties
 	AServerActor();
 
-	// 패킷 재사용 구조체를 가져온다.
+	// 패킷 재사용 구조체를 가져온다. (헤더에 정의된 이유는 외부에서 템플릿으로 사용하면 선언부와 정의부가 같이 있지 않으면 에러나기 때문)
 	template<typename T>
 	TSharedPtr<T> CreateAskPacket(PACKET_TYPE type)
 	{
@@ -518,6 +664,7 @@ public:
 			{
 			case PACKET_TYPE::SKILL: getValue = TSharedPtr<FAskSkillPacket>(new FAskSkillPacket()); break;
 			case PACKET_TYPE::PC_MOVE: getValue = TSharedPtr<FAskPCMovePacket>(new FAskPCMovePacket()); break;
+			case PACKET_TYPE::INTERACTION: getValue = TSharedPtr<FAskInteractionPacket>(new FAskInteractionPacket()); break;
 			}
 
 			if (getValue != nullptr)
@@ -559,8 +706,9 @@ private:
 	TMap<PACKET_TYPE, TArray<TSharedPtr<FAnsPacket>>> ansPacketPool;
 
 	// 요청받은 스킬을 처리.
-	void SkillProcess(TSharedPtr<FAskPacket> packet);
-	void PCMoveProcess(TSharedPtr<FAskPacket> packet);
+	void AnsSkill(TSharedPtr<FAskPacket> packet);
+	void AnsPCMove(TSharedPtr<FAskPacket> packet);
+	void AnsInteraction(TSharedPtr<FAskPacket> packet);
 	
 	void SendNPCMove(TSharedPtr<FNPCInfo> npcInfo);
 	void SendAppearPC(TSharedPtr<FPCInfo> pcInfo);
@@ -568,15 +716,25 @@ private:
 	void SendDisappearPC(const uint32_t& uniqId);
 	void SendDisappearNPC(const uint32_t& uniqId);
 	void SendUpdateUnitInfo(const uint32_t& uniqId, const float& hp, const float& maxHp, const bool& isDie);
+	void SendAppearInteractionObj(TSharedPtr<FInteractionObjInfo> interactionInfo);
+	void SendDisappearInteractionObj(const uint32_t& uniqId);
+	void SendUpdateInventory();
 
+	TArray<TSharedPtr<FMyItemInfo>> myItems;
+	
 	// 내 시야 거리.
-	float mySqrSight = 500.0 * 500.0;
+	float mySqrSight = 800.0 * 800.0;
 	TSharedPtr<FPCInfo> myUnit;
 	TMap<uint32_t, TSharedPtr<FPCInfo>> pcMap;
 	TMap<uint32_t, TSharedPtr<FNPCInfo>> npcMap;
+	TMap<uint32_t, TSharedPtr<FInteractionObjInfo>> interactionMap;
 
 	TQueue<TSharedPtr<FPCInfo>> pcPool;
 	TQueue<TSharedPtr<FNPCInfo>> npcPool;
+	TQueue<TSharedPtr<FInteractionObjInfo>> interactionPool;
+	TQueue<TSharedPtr<FMyItemInfo>> itemPool;
+
+	TArray<TSharedPtr<FNPCInfo>> tempDieNpcs;
 
 	uint32_t temp_uniqId = 0;
 
@@ -584,6 +742,12 @@ private:
 	void RestorePC(TSharedPtr<FPCInfo> pcInfo);
 	TSharedPtr<FNPCInfo> CreateNPC();
 	void RestoreNPC(TSharedPtr<FNPCInfo> npcInfo);
+	TSharedPtr<FInteractionObjInfo> CreateInteraction();
+	void RestoreInteraction(TSharedPtr<FInteractionObjInfo> interactionInfo);
+	TSharedPtr<FMyItemInfo> CreateItem();
+	void RestoreItem(TSharedPtr<FMyItemInfo> itemInfo);
+
+	
 	uint32_t GetUnitUniqId();
 
 protected:

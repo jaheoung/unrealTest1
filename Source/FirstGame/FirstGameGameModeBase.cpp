@@ -3,12 +3,28 @@
 #include "FirstGameGameModeBase.h"
 
 #include "hpBarWidget.h"
+#include "HUDWidget.h"
+#include "InteractionActor.h"
+#include "InventoryWidget.h"
 #include "MyCamActor.h"
 #include "MyUnit.h"
 #include "MyNpc.h"
 #include "Weapon.h"
 #include "ServerActor.h"
 #include "Components/WidgetComponent.h"
+
+AFirstGameGameModeBase::AFirstGameGameModeBase()
+{
+	auto hudAsset = ConstructorHelpers::FClassFinder<UUserWidget>(TEXT("WidgetBlueprint'/Game/MyResource/BP_HUD.BP_HUD_C'"));
+
+	if (hudAsset.Succeeded())
+		uiWidgetClassMap.Add(WIDGET_TYPE::HUD, hudAsset.Class);
+	
+	auto interactionAsset = ConstructorHelpers::FClassFinder<UUserWidget>(TEXT("WidgetBlueprint'/Game/MyResource/BP_Inventory.BP_Inventory_C'"));
+
+	if (interactionAsset.Succeeded())
+		uiWidgetClassMap.Add(WIDGET_TYPE::INVENTORY, interactionAsset.Class);
+}
 
 void AFirstGameGameModeBase::StartPlay()
 {
@@ -27,17 +43,63 @@ void AFirstGameGameModeBase::StartPlay()
 	}
 
 	characterCam = world->SpawnActor<AMyCamActor>();
+	
+	characterCam->EnableInput(GetWorld()->GetFirstPlayerController());
 
-	// SpawnMyPlayer();
-
-	/*for (int i = 0; i < 30; ++i)
-	{
-		int x = FMath::RandRange(-1000, 1000);
-		int y = FMath::RandRange(-1000, 1000);
-		float dirAngle = FMath::RandRange(0, 360);
-		SpawnNpc((uint32)i, x, y, 0.19, dirAngle);	
-	}*/
+	// hud 붙임.
+	OpenWidget(WIDGET_TYPE::HUD);
+	
 }
+
+void AFirstGameGameModeBase::OpenWidget(WIDGET_TYPE type)
+{
+	UUserWidget** getWidget = uiWidgetMap.Find(type);
+
+	if (getWidget == nullptr)
+	{
+		auto newWidget = CreateWidget(GetWorld(), *uiWidgetClassMap[type]);
+
+		if (newWidget != nullptr)
+		{
+			UMyBaseWidget* getBaseWidget = Cast<UMyBaseWidget>(newWidget);
+
+			if (getBaseWidget != nullptr)
+			{
+				getBaseWidget->widgetType = type;
+				getBaseWidget->Open();
+			}
+			
+			uiWidgetMap.Emplace(type, newWidget);
+			newWidget->AddToViewport();
+		}
+	}
+	else
+	{
+		(*getWidget)->SetVisibility(ESlateVisibility::Visible);
+		
+		UMyBaseWidget* getBaseWidget = Cast<UMyBaseWidget>(*getWidget);
+
+		if (getBaseWidget != nullptr)
+			getBaseWidget->Open();
+	}
+}
+
+void AFirstGameGameModeBase::CloseWidget(WIDGET_TYPE type)
+{
+	UUserWidget** getWidget = uiWidgetMap.Find(type);
+
+	if (getWidget != nullptr)
+	{
+		(*getWidget)->SetVisibility(ESlateVisibility::Hidden);
+		
+		UMyBaseWidget* getBaseWidget = Cast<UMyBaseWidget>(*getWidget);
+
+		if (getBaseWidget != nullptr)
+			getBaseWidget->Close();
+	}
+}
+
+
 
 void AFirstGameGameModeBase::Tick(float DeltaSeconds)
 {
@@ -194,6 +256,83 @@ void AFirstGameGameModeBase::UpdateUnitInfo(TSharedPtr<FAnsUpdateUnitInfoPacket>
 	}
 }
 
+void AFirstGameGameModeBase::AppearInteractionObj(TSharedPtr<FAnsInteractionAppearPacket> packet)
+{
+	if (packet == nullptr || packet.IsValid() == false)
+		return;
+
+	AInteractionActor* interactionActor = CreateInteractionObj();
+
+	if (interactionActor != nullptr)
+	{
+		interactionActor->ClearData();
+		interactionActor->uniqId = packet->uniqId;
+		interactionActor->SetActorLocation(FVector(packet->x, packet->y, 0));
+		FRotator r = interactionActor->GetActorRotation();
+		r.Yaw += packet->rot;
+		interactionActor->SetActorRotation(r);
+		interactionObjMap.Add(packet->uniqId, interactionActor);
+	}
+}
+
+void AFirstGameGameModeBase::DisappearInteractionObj(TSharedPtr<FAnsInteractionDisappearPacket> packet)
+{
+	if (packet == nullptr || packet.IsValid() == false)
+		return;
+
+	AInteractionActor** getInteractionObj = interactionObjMap.Find(packet->uniqId);
+
+	if (getInteractionObj != nullptr)
+	{
+		RestoreInteractionObj(*getInteractionObj);
+		npcMap.Remove(packet->uniqId);
+	}
+}
+
+void AFirstGameGameModeBase::UpdateInventory(TSharedPtr<FAnsUpdateInventoryPacket> packet)
+{
+	if (packet == nullptr || packet.IsValid() == false)
+		return;
+
+	for (auto elem : myItems)
+	{
+		elem->ClearData();
+		myItemPool.Enqueue(elem);
+	}
+	myItems.Empty();
+
+	for (int i = 0, k = packet->itemCount; i < k; ++i)
+	{
+		TSharedPtr<FMyItemInfo> item;
+		if (myItemPool.IsEmpty())
+		{
+			item = TSharedPtr<FMyItemInfo>(new FMyItemInfo());
+		}
+		else
+		{
+			myItemPool.Dequeue(item);
+		}
+
+		if (item == nullptr || item.IsValid() == false)
+			continue;
+
+		FMyItemInfo& info = packet->items[i];
+
+		item->uniqId = info.uniqId;
+		item->type = info.type;
+		item->count = info.count;
+
+		myItems.Emplace(item);
+	}
+
+	UInventoryWidget* getWidget = GetWidget<UInventoryWidget>(WIDGET_TYPE::INVENTORY);
+
+	if (getWidget != nullptr && getWidget->GetVisibility() == ESlateVisibility::Visible)
+	{
+		getWidget->UpdateInventory();
+	}
+}
+
 
 
 AMyNpc* AFirstGameGameModeBase::CreateNpc()
@@ -222,6 +361,35 @@ void AFirstGameGameModeBase::RestoreNpc(AMyNpc* npc)
 	npc->ClearData();
 	npcPool.Enqueue(npc);
 }
+
+AInteractionActor* AFirstGameGameModeBase::CreateInteractionObj()
+{
+	if (interactionObjPool.IsEmpty())
+	{
+		return GetWorld()->SpawnActor<AInteractionActor>();
+	}
+	else
+	{
+		AInteractionActor* getInteractionObj;
+
+		if (interactionObjPool.Dequeue(getInteractionObj))
+		{
+			getInteractionObj->SetActorHiddenInGame(false);
+			getInteractionObj->ClearData();
+			return getInteractionObj;
+		}
+	}
+	return nullptr;
+}
+
+void AFirstGameGameModeBase::RestoreInteractionObj(AInteractionActor* interactionObj)
+{
+	interactionObj->SetActorHiddenInGame(true);
+	interactionObj->ClearData();
+	interactionObjPool.Enqueue(interactionObj);
+}
+
+
 
 void AFirstGameGameModeBase::AnsCallback(const TSharedPtr<FAnsPacket> packet)
 {
@@ -266,6 +434,21 @@ void AFirstGameGameModeBase::AnsCallback(const TSharedPtr<FAnsPacket> packet)
 	case PACKET_TYPE::UPDATE_UNIT_INFO:
 		{
 			UpdateUnitInfo(StaticCastSharedPtr<FAnsUpdateUnitInfoPacket>(packet));
+		}
+		break;
+	case PACKET_TYPE::INTERACTION_APPEAR:
+		{
+			AppearInteractionObj(StaticCastSharedPtr<FAnsInteractionAppearPacket>(packet));
+		}
+		break;
+	case PACKET_TYPE::INTERACTION_DISAPPEAR:
+		{
+			DisappearInteractionObj(StaticCastSharedPtr<FAnsInteractionDisappearPacket>(packet));
+		}
+		break;
+	case PACKET_TYPE::UPDATE_INVENTORY:
+		{
+			UpdateInventory(StaticCastSharedPtr<FAnsUpdateInventoryPacket>(packet));
 		}
 		break;
 	}

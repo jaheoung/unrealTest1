@@ -33,17 +33,6 @@ AMyUnit::AMyUnit()
 		TEXT("AnimBlueprint'/Game/MyResource/BP_MyUnitAnim_singleGun.BP_MyUnitAnim_singleGun_C'"));
 
 	animMap.Add((int)(WEAPON_TYPE::SINGLE_GUN), getAnim2.Class);
-
-
-
-
-
-
-
-	/*if (getAnim.Succeeded())
-	{
-		myMesh->SetAnimInstanceClass(getAnim.Class);
-	}*/
 }
 
 void AMyUnit::BeginPlay()
@@ -163,6 +152,27 @@ void AMyUnit::DefaultSkill()
 		return;
 
 	SetState(UNIT_STATE::DEFAULT_SKILL);
+
+	// test skill
+	AFirstGameGameModeBase* gameMode = GetWorld()->GetAuthGameMode<AFirstGameGameModeBase>();
+
+	if (gameMode != nullptr && gameMode->serverActor != nullptr)
+	{
+		TSharedPtr<FAskSkillPacket> packet = gameMode->serverActor->CreateAskPacket<FAskSkillPacket>(PACKET_TYPE::SKILL);
+			
+		if (packet != nullptr && packet.IsValid())
+		{
+			packet->ClearData();
+
+			FVector myPos = GetActorLocation();
+			
+			packet->castUnitUniqId = uniqId;
+			packet->dirNormal = FVector::ZeroVector; // 지금은 서버에 저장되어 있는걸 그냥씀. 아직 클라에서 이정보를 가지고 있지 않음.
+			packet->isPc = true;
+			packet->skillType = SKILL_TYPE::PC_DEFAULT_SKILL;
+			gameMode->serverActor->RegAskPacket(packet);
+		}
+	}
 }
 
 void AMyUnit::EvationSkill()

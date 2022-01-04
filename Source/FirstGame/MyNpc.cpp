@@ -32,7 +32,7 @@ AMyNpc::AMyNpc()
 	}
 	
 	hpBarComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("myWidgetComponent"));
-	hpBarComp->AttachToComponent(RootComponent, FAttachmentTransformRules(EAttachmentRule::KeepRelative, true), GetAttachParentSocketName());
+	hpBarComp->SetupAttachment(RootComponent,  GetAttachParentSocketName());
 
 	auto hpBarAsset = ConstructorHelpers::FClassFinder<UhpBarWidget>(TEXT("WidgetBlueprint'/Game/MyResource/BP_HpBar.BP_HpBar_C'"));
 	if (hpBarAsset.Succeeded())
@@ -96,13 +96,5 @@ void AMyNpc::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (hpBarComp != nullptr)
-	{
-		AFirstGameGameModeBase* gameMode = GetWorld()->GetAuthGameMode<AFirstGameGameModeBase>();
-		FRotator camRot = gameMode->characterCam->GetActorRotation();
-		FRotator resultRot = FRotator::ZeroRotator;
-		resultRot.Yaw += 180; // npc 가 회전한만큼 회전한게 아니라 그냥 월드 기준으로 0도였음;
-		resultRot += camRot.GetInverse();
-		hpBarComp->SetWorldRotation(resultRot);
-	}
+	UMyBaseWidget::LookAtWidgetComponent(GetWorld(), hpBarComp);
 }
