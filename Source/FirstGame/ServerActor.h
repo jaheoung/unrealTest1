@@ -19,6 +19,7 @@ enum class ITEM_TYPE
 {
 	NONE,
 	MEAT,
+	GOLD,
 };
 
 struct FMyItemInfo
@@ -650,6 +651,8 @@ public:
 	// Sets default values for this actor's properties
 	AServerActor();
 
+	void StartServer();
+
 	// 패킷 재사용 구조체를 가져온다. (헤더에 정의된 이유는 외부에서 템플릿으로 사용하면 선언부와 정의부가 같이 있지 않으면 에러나기 때문)
 	template<typename T>
 	TSharedPtr<T> CreateAskPacket(PACKET_TYPE type)
@@ -715,7 +718,7 @@ private:
 	void SendAppearNPC(TSharedPtr<FNPCInfo> npcInfo);
 	void SendDisappearPC(const uint32_t& uniqId);
 	void SendDisappearNPC(const uint32_t& uniqId);
-	void SendUpdateUnitInfo(const uint32_t& uniqId, const float& hp, const float& maxHp, const bool& isDie);
+	void SendUpdateUnitInfo(const uint32_t& uniqId, const float& hp, const float& maxHp);
 	void SendAppearInteractionObj(TSharedPtr<FInteractionObjInfo> interactionInfo);
 	void SendDisappearInteractionObj(const uint32_t& uniqId);
 	void SendUpdateInventory();

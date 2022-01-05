@@ -37,9 +37,8 @@ AInteractionActor::AInteractionActor()
 	auto interactionActorAsset = ConstructorHelpers::FClassFinder<UInteractionWidget>(TEXT("WidgetBlueprint'/Game/MyResource/BP_Interaction.BP_Interaction_C'"));
 	if (interactionActorAsset.Succeeded())
 	{
-		interactionWidgetComp->SetWidgetSpace(EWidgetSpace::World);
 		interactionWidgetComp->SetWidgetClass(interactionActorAsset.Class);
-		interactionWidgetComp->SetWorldLocation(FVector(0, 0, 200)); // 상대적 소켓 위치로 해야할듯.
+		interactionWidgetComp->SetRelativeLocation(FVector(0, 0, 200)); // 상대적 소켓 위치로 해야할듯.
 		interactionWidgetComp->SetDrawSize(FVector2D(200, 200));
 	}
 }

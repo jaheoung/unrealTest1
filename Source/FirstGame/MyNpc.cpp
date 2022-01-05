@@ -37,9 +37,8 @@ AMyNpc::AMyNpc()
 	auto hpBarAsset = ConstructorHelpers::FClassFinder<UhpBarWidget>(TEXT("WidgetBlueprint'/Game/MyResource/BP_HpBar.BP_HpBar_C'"));
 	if (hpBarAsset.Succeeded())
 	{
-		hpBarComp->SetWidgetSpace(EWidgetSpace::World);
 		hpBarComp->SetWidgetClass(hpBarAsset.Class);
-		hpBarComp->SetWorldLocation(FVector(0, 0, 400)); // 상대적 소켓 위치로 해야할듯.
+		hpBarComp->SetRelativeLocation(FVector(0, 0, 400)); // 상대적 소켓 위치로 해야할듯.
 		hpBarComp->SetDrawSize(FVector2D(200, 200));
 	}
 	

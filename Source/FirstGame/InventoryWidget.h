@@ -15,6 +15,10 @@ class FIRSTGAME_API UInventoryWidget : public UMyBaseWidget
 	GENERATED_BODY()
 
 public:
+	UInventoryWidget();
+
+	TMap<enum class ITEM_TYPE, UTexture2D*> texSourceMap;
+	
 	UPROPERTY(meta=(BindWidget))
 	class UButton* closeBtn;
 

@@ -4,6 +4,7 @@
 #include "InventoryItemWidget.h"
 
 #include "InventoryItemData.h"
+#include "Components/Image.h"
 #include "Components/TextBlock.h"
 
 void UInventoryItemWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
@@ -14,4 +15,6 @@ void UInventoryItemWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 		return;
 
 	itemText->SetText(data->itemName);
+	itemImage->Brush.SetResourceObject(data->itemTex);
+	
 }

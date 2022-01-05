@@ -34,6 +34,9 @@ public:
 	
 	AServerActor* serverActor;
 
+	TArray<float> heightMapdatas;
+	float GetHeight(float& x, float&y);
+
 	void AnsCallback(const TSharedPtr<FAnsPacket> packet);
 	
 	UPROPERTY(BlueprintReadWrite)

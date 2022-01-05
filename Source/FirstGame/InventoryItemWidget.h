@@ -19,6 +19,8 @@ class FIRSTGAME_API UInventoryItemWidget : public UUserWidget, public IUserObjec
 public:
 	UPROPERTY(meta=(BindWidget))
 	class UTextBlock* itemText;
+	UPROPERTY(meta=(BindWidget))
+	class UImage* itemImage;
 	
 protected:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;

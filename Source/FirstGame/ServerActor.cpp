@@ -13,18 +13,15 @@ AServerActor::AServerActor()
 
 }
 
-// Called when the game starts or when spawned
-void AServerActor::BeginPlay()
+void AServerActor::StartServer()
 {
-	Super::BeginPlay();
-
 	myUnit = CreatePC();
 
 	if (myUnit != nullptr && myUnit.IsValid())
 	{
 		myUnit->ClearData();
 		myUnit->uniqId = GetUniqueID();
-		myUnit->SetPos(0, 0, 0);
+		myUnit->SetPos(2500, 2500, 0);
 		myUnit->rot = 0;
 		myUnit->weaponType = WEAPON_TYPE::SINGLE_SWORD;
 		myUnit->unitScale = 0.3f;
@@ -41,7 +38,7 @@ void AServerActor::BeginPlay()
 
 		getNpc->ClearData();
 		getNpc->uniqId = GetUnitUniqId();
-		getNpc->SetPos(FMath::RandRange(-2000, 2000), FMath::RandRange(-2000, 2000), 0);
+		getNpc->SetPos(FMath::RandRange(0, 5000), FMath::RandRange(0, 5000), 0);
 		getNpc->rot = FMath::RandRange(0, 360);
 		getNpc->unitScale = 0.3;
 		getNpc->hp = 300;
@@ -59,11 +56,18 @@ void AServerActor::BeginPlay()
 
 		getInteractionObj->ClearData();
 		getInteractionObj->uniqId = GetUnitUniqId();
-		getInteractionObj->x = FMath::RandRange(-2000, 2000);
-		getInteractionObj->y = FMath::RandRange(-2000, 2000);
+		getInteractionObj->x = FMath::RandRange(0, 5000);
+		getInteractionObj->y = FMath::RandRange(0, 5000);
 		getInteractionObj->rot = FMath::RandRange(0, 360);
 		interactionMap.Emplace(getInteractionObj->uniqId, getInteractionObj);
 	}
+}
+
+
+// Called when the game starts or when spawned
+void AServerActor::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 template<typename T>
@@ -204,7 +208,7 @@ void AServerActor::Tick(float DeltaTime)
 			// 이동 처리.
 			if (npcInfo->curPathIndex == 0)
 			{
-				npcInfo->SetMove(FVector(FMath::RandRange(-2000, 2000), FMath::RandRange(-2000, 2000), 0), GetWorld());
+				npcInfo->SetMove(FVector(FMath::RandRange(0, 5000), FMath::RandRange(0, 5000), 0), GetWorld());
 			}
 			else
 			{
@@ -358,18 +362,7 @@ void AServerActor::AnsSkill(TSharedPtr<FAskPacket> packet)
 				}
 				else
 				{
-					TSharedPtr<FAnsUpdateUnitInfoPacket> ansPacket = CreateAnsPacket<FAnsUpdateUnitInfoPacket>(PACKET_TYPE::UPDATE_UNIT_INFO);
-
-					if (ansPacket != nullptr && ansPacket.IsValid())
-					{
-						ansPacket->ClearData();
-						ansPacket->ret = PACKET_RET::SUCCESS;
-						ansPacket->uniqId = npc->uniqId;
-						ansPacket->hp = npc->hp;
-						ansPacket->maxHp = npc->maxHp;
-		
-						RegAnsPacket(ansPacket);
-					}
+					SendUpdateUnitInfo(npc->uniqId, npc->hp, npc->maxHp);
 				}
 			}
 		}
@@ -547,7 +540,7 @@ void AServerActor::SendDisappearNPC(const uint32_t& uniqId)
 	}
 }
 
-void AServerActor::SendUpdateUnitInfo(const uint32_t& uniqId, const float& hp, const float& maxHp, const bool& isDie)
+void AServerActor::SendUpdateUnitInfo(const uint32_t& uniqId, const float& hp, const float& maxHp)
 {
 	TSharedPtr<FAnsUpdateUnitInfoPacket> packet = CreateAnsPacket<FAnsUpdateUnitInfoPacket>(PACKET_TYPE::UPDATE_UNIT_INFO);
 

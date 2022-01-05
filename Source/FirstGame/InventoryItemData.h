@@ -16,4 +16,5 @@ class FIRSTGAME_API UInventoryItemData : public UObject
 
 public:
 	FText itemName;
+	UTexture2D* itemTex;
 };
