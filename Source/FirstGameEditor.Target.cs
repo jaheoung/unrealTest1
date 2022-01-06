@@ -9,6 +9,6 @@ public class FirstGameEditorTarget : TargetRules
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange( new string[] { "FirstGame" } );
+		ExtraModuleNames.AddRange( new string[] { "FirstGameEditor" } );
 	}
 }
