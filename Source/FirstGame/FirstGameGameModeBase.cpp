@@ -3,7 +3,9 @@
 #include "FirstGameGameModeBase.h"
 
 #include <fstream>
+#include <iostream>
 #include <string>
+#include <vector>
 
 #include "hpBarWidget.h"
 #include "HUDWidget.h"
@@ -49,118 +51,64 @@ void AFirstGameGameModeBase::StartPlay()
 	}
 
 	characterCam = world->SpawnActor<AMyCamActor>();
-	
 	characterCam->EnableInput(GetWorld()->GetFirstPlayerController());
 
 	// hud 붙임.
 	OpenWidget(WIDGET_TYPE::HUD);
 
+	// height map 로드.
+	ReadHeightMap();
 
-
-
-	// test map 정보.
-	FHitResult hitResult;
-	FVector startPoint = FVector(0, 0, 10000);
-	FVector downVec = FVector::DownVector * 100000;
-
-	
-	const int gap = 4; // 이 간격으로 가로세로 체크.
-	const int size = 5000; // 가로 세로 같음.
-
-	/* 이 주석은 맵을 이미지로 출력.
-	std::ofstream imgFile;
-	FString path = FPaths::ProjectDir();
-	path.Append(TEXT("map.pgm"));
-	imgFile.open(*path);
-	
-	// minZ~maxZ 까지를 0~255 까지로 변환 저장.
-	float minZ = 0;
-	float maxZ = 1000;
-	float rate = maxZ / 255;
-	int count = size / gap;
-	
-	std::string str;
-	str.append("P2 ");
-	str.append(std::to_string(count));
-	str.append(" ");
-	str.append(std::to_string(count));
-	str.append(" 255\n");
-	imgFile.write(str.data(), str.size());
-	str.clear();
-	
-	for (int x = size - 1; x > -1; x -= gap) // top 뷰에서 바라봤을때 x 가 위쪽 y 가 오른쪽으로 전개된다.
-	{
-		startPoint.X = x;
-		for (int y = 0; y < size; y += gap)
-		{
-			startPoint.Y = y;	
-			if (world->LineTraceSingleByChannel(hitResult, startPoint, startPoint + downVec, ECollisionChannel::ECC_Visibility,
-				FCollisionQueryParams::DefaultQueryParam, FCollisionResponseParams::DefaultResponseParam))
-			{
-				str.append(std::to_string((int)(hitResult.Location.Z * rate)));
-				str.append(" ");
-			}
-		}
-		str.append("\n");
-		imgFile.write(str.data(), str.size());
-		str.clear();
-	}
-
-	imgFile.close();
-	*/
-	
-
-	// 여기서부턴 height map 출력.
-	/*
-	FString hpath = FPaths::ProjectDir();
-	hpath.Append(TEXT("heightMap.bin"));
-	std::ofstream heightFile(*hpath, std::ios::out | std::ios::binary);
-	
-	TArray<float> mdata;
-	startPoint.X = startPoint.Y = 0;
-	for (int x = 0; x < size; ++x) // top뷰 기준 위쪽 방향.
-	{
-		startPoint.X = x;
-		for (int y = 0; y < size; ++y) // top뷰 기준 오른쪽 방향.
-		{
-			startPoint.Y = y;	
-			if (world->LineTraceSingleByChannel(hitResult, startPoint, startPoint + downVec, ECollisionChannel::ECC_Visibility,
-				FCollisionQueryParams::DefaultQueryParam, FCollisionResponseParams::DefaultResponseParam))
-			{
-				mdata.Emplace(hitResult.Location.Z);
-			}
-		}
-	}
-	heightFile.write((char*)(mdata.GetData()), sizeof(float) * mdata.Num());
-	heightFile.close();
-	*/
-
-	// 여기서부턴 height map 로드.
-	FString hpath = FPaths::ProjectDir();
-	hpath.Append(TEXT("heightMap.bin"));
-	std::ifstream heightFile(*hpath, std::ios::in | std::ios::binary);
-	
-	float* readData = new float[size * size];
-
-	heightFile.seekg(0, heightFile.end);
-	size_t fileSize = heightFile.tellg();
-	UE_LOG(LogTemp, Warning, TEXT("read count : %d"), fileSize);
-	heightFile.seekg(0, heightFile.beg);
-	
-	heightFile.read((char*)readData, fileSize);
-	heightFile.close();
-	
-	heightMapdatas.Empty();
-	heightMapdatas.Append(readData, size * size);
-	
-	UE_LOG(LogTemp, Warning, TEXT("read count : %d"), heightMapdatas.Num());
-	
 	serverActor->StartServer();
 }
 
+void AFirstGameGameModeBase::ReadHeightMap()
+{
+	heightMapdatas.Empty();
+
+	FString hpath = FPaths::ProjectDir();
+	hpath.Append(TEXT("heightMap.bin"));
+	std::ifstream readFile(*hpath, std::ios::in | std::ios::binary);
+
+	readFile.read((char*)&heightMapSize, sizeof(int));
+
+	readFile.seekg(0, readFile.end);
+	size_t fileSize = readFile.tellg();
+	readFile.seekg(0, readFile.beg);
+	
+	size_t arrSize = fileSize / sizeof(float);
+	float* buf = new float[arrSize];
+
+	// float 단위 총 읽을 갯수로 array 를 생성하고
+	// file 에서는 실제 사이즈 만큼 read 해야한다.
+	
+	readFile.read((char *) buf, fileSize);
+	
+	heightMapdatas.Append(buf, arrSize);
+
+	delete[] buf;
+
+	readFile.close();
+}
+
+
 float AFirstGameGameModeBase::GetHeight(float& x, float& y)
 {
-	int&&  index = 5000 * (int)x + (int)y; // x 가 top view 기준 위쪽이라.. 헷깔림. 
+	if (heightMapdatas.Num() == 0)
+		return 0;
+	
+	if (heightMapWidth == 0)
+		heightMapWidth = FMath::Sqrt(heightMapdatas.Num());
+
+	if (x < 0 || x > heightMapSize || y < 0 || y > heightMapSize)
+		return 0;
+
+	if (heightMapRate <= 0)
+		heightMapRate = heightMapWidth / (float)heightMapSize;
+
+	int&&  index = heightMapWidth * (int)(heightMapRate * x) + (int)(heightMapRate * y); // x 가 top view 기준 위쪽이라.. 헷깔림.
+	// UE_LOG(LogTemp, Warning, TEXT("w : %d, x : %d, y : %d, rate : %f         getHeight : %f"), heightMapWidth, (int)(heightMapRate * x), (int)(heightMapRate * y), heightMapRate, heightMapdatas[index]);
+	
 	return heightMapdatas[index]; 
 }
 
@@ -219,8 +167,10 @@ void AFirstGameGameModeBase::Tick(float DeltaSeconds)
 {
 	if (myUnit != nullptr)
 	{
+		//test
 		FVector pos = myUnit->GetActorLocation();
-		UE_LOG(LogTemp, Warning, TEXT("%f"), GetHeight(pos.X, pos.Y));
+		pos.Z = GetHeight(pos.X, pos.Y);
+		myUnit->SetActorLocation(pos);
 	}
 }
 
