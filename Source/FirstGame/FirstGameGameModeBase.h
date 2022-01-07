@@ -35,7 +35,7 @@ public:
 	AServerActor* serverActor;
 
 	TArray<float> heightMapdatas;
-	int heightMapSize = 0;
+	int mapSize = -1;
 	int heightMapWidth = 0;
 	float heightMapRate = 0.0;
 	float GetHeight(float& x, float&y);

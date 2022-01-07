@@ -70,7 +70,7 @@ void AFirstGameGameModeBase::ReadHeightMap()
 	hpath.Append(TEXT("heightMap.bin"));
 	std::ifstream readFile(*hpath, std::ios::in | std::ios::binary);
 
-	readFile.read((char*)&heightMapSize, sizeof(int));
+	readFile.read((char*)&mapSize, sizeof(int));
 
 	readFile.seekg(0, readFile.end);
 	size_t fileSize = readFile.tellg();
@@ -100,11 +100,11 @@ float AFirstGameGameModeBase::GetHeight(float& x, float& y)
 	if (heightMapWidth == 0)
 		heightMapWidth = FMath::Sqrt(heightMapdatas.Num());
 
-	if (x < 0 || x > heightMapSize || y < 0 || y > heightMapSize)
+	if (x < 0 || x > mapSize || y < 0 || y > mapSize)
 		return 0;
 
 	if (heightMapRate <= 0)
-		heightMapRate = heightMapWidth / (float)heightMapSize;
+		heightMapRate = heightMapWidth / (float)mapSize;
 
 	int&&  index = heightMapWidth * (int)(heightMapRate * x) + (int)(heightMapRate * y); // x 가 top view 기준 위쪽이라.. 헷깔림.
 	// UE_LOG(LogTemp, Warning, TEXT("w : %d, x : %d, y : %d, rate : %f         getHeight : %f"), heightMapWidth, (int)(heightMapRate * x), (int)(heightMapRate * y), heightMapRate, heightMapdatas[index]);
