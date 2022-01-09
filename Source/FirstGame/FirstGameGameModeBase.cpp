@@ -38,6 +38,12 @@ void AFirstGameGameModeBase::StartPlay()
 {
 	Super::StartPlay();
 
+	// 툴이 실행중인지 확인.
+	ReadToolSetting();
+
+	if (isOnMapTool == true) // 맵툴이 실행되어 있다면.
+		return;
+
 	UWorld* world = GetWorld();
 
 	if (world == nullptr)
@@ -62,6 +68,20 @@ void AFirstGameGameModeBase::StartPlay()
 	serverActor->StartServer();
 }
 
+void AFirstGameGameModeBase::ReadToolSetting()
+{
+	FString path = FPaths::ProjectDir();
+	path.Append(TEXT("toolSetting.bin"));
+	std::ifstream readFile(*path, std::ios::in | std::ios::binary);
+	
+	if (readFile.is_open())
+	{
+		readFile.read((char*)&isOnMapTool, sizeof(bool)); // 첫번째는 맵툴 on off 정보.
+		readFile.close();
+	}
+}
+
+
 void AFirstGameGameModeBase::ReadHeightMap()
 {
 	heightMapdatas.Empty();
@@ -70,25 +90,28 @@ void AFirstGameGameModeBase::ReadHeightMap()
 	hpath.Append(TEXT("heightMap.bin"));
 	std::ifstream readFile(*hpath, std::ios::in | std::ios::binary);
 
-	readFile.read((char*)&mapSize, sizeof(int));
+	if (readFile.is_open())
+	{
+		readFile.read((char*)&mapSize, sizeof(int));
 
-	readFile.seekg(0, readFile.end);
-	size_t fileSize = readFile.tellg();
-	readFile.seekg(0, readFile.beg);
+		readFile.seekg(0, readFile.end);
+		size_t fileSize = readFile.tellg();
+		readFile.seekg(0, readFile.beg);
 	
-	size_t arrSize = fileSize / sizeof(float);
-	float* buf = new float[arrSize];
+		size_t arrSize = fileSize / sizeof(float);
+		float* buf = new float[arrSize];
 
-	// float 단위 총 읽을 갯수로 array 를 생성하고
-	// file 에서는 실제 사이즈 만큼 read 해야한다.
+		// float 단위 총 읽을 갯수로 array 를 생성하고
+		// file 에서는 실제 사이즈 만큼 read 해야한다.
 	
-	readFile.read((char *) buf, fileSize);
+		readFile.read((char *) buf, fileSize);
 	
-	heightMapdatas.Append(buf, arrSize);
+		heightMapdatas.Append(buf, arrSize);
 
-	delete[] buf;
+		delete[] buf;
 
-	readFile.close();
+		readFile.close();
+	}
 }
 
 
@@ -335,7 +358,7 @@ void AFirstGameGameModeBase::AppearInteractionObj(TSharedPtr<FAnsInteractionAppe
 	{
 		interactionActor->ClearData();
 		interactionActor->uniqId = packet->uniqId;
-		interactionActor->SetActorLocation(FVector(packet->x, packet->y, 0));
+		interactionActor->SetActorLocation(FVector(packet->x, packet->y, GetHeight(packet->x, packet->y)));
 		FRotator r = interactionActor->GetActorRotation();
 		r.Yaw += packet->rot;
 		interactionActor->SetActorRotation(r);

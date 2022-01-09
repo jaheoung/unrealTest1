@@ -3,7 +3,6 @@
 #include <fstream>
 #include <string>
 
-#include "Actor.h"
 #include "Engine.h"
 #include "Modules/ModuleInterface.h"
 #include "Modules/ModuleManager.h"
@@ -22,12 +21,14 @@ class FFirstGameEditor : public IModuleInterface
 	TSharedPtr<const FExtensionBase> Extension;
 
 	// 맵 크기 (정사각형)
-	int mapSize = 5000;
+	int mapSize = 18900;
 	// 이 간격으로 맵 크기만큼 읽어서 처리.
-	int mapCheckGap = 4;
+	int mapCheckGap = 10;
 
 	void MyButtonClick()
 	{
+
+		int aa =0;
 		// 이 부분이 윈도우를 세팅하는 부분이다.
 		TSharedRef<SWindow> MapToolWindow = SNew(SWindow)
 			.Title(FText::FromString(TEXT("Map Tool")))
@@ -112,8 +113,8 @@ class FFirstGameEditor : public IModuleInterface
 	FReply MapImageWrite()
 	{
 		FHitResult hitResult;
-		FVector startPoint = FVector(0, 0, 10000);
-		FVector downVec = FVector::DownVector * 100000;
+		FVector startPoint = FVector(0, 0, 100000);
+		FVector downVec = FVector::DownVector * 150000;
 
 		std::ofstream imgFile;
 		FString path = FPaths::ProjectDir();
@@ -121,8 +122,8 @@ class FFirstGameEditor : public IModuleInterface
 		imgFile.open(*path);
 
 		// 기록할 최대 높이값.
-		float maxHeight = 1000;
-		float rate = maxHeight / 255;
+		float maxHeight = 5500;
+		float rate = 255 / maxHeight;
 		int count = mapSize / mapCheckGap;
 	
 		std::string str;
@@ -146,6 +147,10 @@ class FFirstGameEditor : public IModuleInterface
 					str.append(std::to_string((int)(hitResult.Location.Z * rate)));
 					str.append(" ");
 				}
+				else
+				{
+					str.append("0 ");
+				}
 			}
 			str.append("\n");
 			imgFile.write(str.data(), str.size());
@@ -168,8 +173,8 @@ class FFirstGameEditor : public IModuleInterface
 		}
 		
 		FHitResult hitResult;
-		FVector startPoint = FVector(0, 0, 10000);
-		FVector downVec = FVector::DownVector * 100000;
+		FVector startPoint = FVector(0, 0, 100000);
+		FVector downVec = FVector::DownVector * 150000;
 	
 		FString hpath = FPaths::ProjectDir();
 		hpath.Append(TEXT("heightMap.bin"));
@@ -190,6 +195,10 @@ class FFirstGameEditor : public IModuleInterface
 				{
 					mdata.Emplace(hitResult.Location.Z);
 				}
+				else
+				{
+					mdata.Emplace(0);
+				}
 			}
 		}
 
@@ -207,9 +216,6 @@ class FFirstGameEditor : public IModuleInterface
 	void ChangeMapSize(const FText& txt)
 	{
 		int&& getInt = FCString::Atoi(*txt.ToString());
-
-		if ((getInt % 2) > 2)
-			--getInt;
 		
 		mapSize = getInt;
 	}
@@ -217,9 +223,6 @@ class FFirstGameEditor : public IModuleInterface
 	void ChangeMapCheckGap(const FText& txt)
 	{
 		int&& getInt = FCString::Atoi(*txt.ToString());
-
-		if (getInt > 1 && (getInt % 2) > 2)
-			--getInt;
 		
 		mapCheckGap = getInt;
 	}

@@ -32,7 +32,7 @@ public:
 
 	AFirstGameGameModeBase();
 	
-	AServerActor* serverActor;
+	AServerActor*serverActor;
 
 	TArray<float> heightMapdatas;
 	int mapSize = -1;
@@ -40,6 +40,9 @@ public:
 	float heightMapRate = 0.0;
 	float GetHeight(float& x, float&y);
 	void ReadHeightMap();
+
+	bool isOnMapTool = false;
+	void ReadToolSetting();
 
 	void AnsCallback(const TSharedPtr<FAnsPacket> packet);
 	

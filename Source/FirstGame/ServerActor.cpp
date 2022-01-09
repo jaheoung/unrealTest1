@@ -4,6 +4,7 @@
 #include "ServerActor.h"
 
 #include "DrawDebugHelpers.h"
+#include "FirstGameGameModeBase.h"
 
 // Sets default values
 AServerActor::AServerActor()
@@ -17,6 +18,8 @@ void AServerActor::StartServer()
 {
 	myUnit = CreatePC();
 
+	AFirstGameGameModeBase* gameMode = GetWorld()->GetAuthGameMode<AFirstGameGameModeBase>();
+	
 	if (myUnit != nullptr && myUnit.IsValid())
 	{
 		myUnit->ClearData();
@@ -29,7 +32,7 @@ void AServerActor::StartServer()
 		pcMap.Emplace(myUnit->uniqId, myUnit);
 	}
 
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < 400; ++i)
 	{
 		TSharedPtr<FNPCInfo> getNpc = CreateNPC();
 
@@ -38,7 +41,9 @@ void AServerActor::StartServer()
 
 		getNpc->ClearData();
 		getNpc->uniqId = GetUnitUniqId();
-		getNpc->SetPos(FMath::RandRange(0, 5000), FMath::RandRange(0, 5000), 0);
+		float x = FMath::RandRange(0, gameMode->mapSize);
+		float y = FMath::RandRange(0, gameMode->mapSize);
+		getNpc->SetPos(x, y, gameMode->GetHeight(x, y));
 		getNpc->rot = FMath::RandRange(0, 360);
 		getNpc->unitScale = 0.3;
 		getNpc->hp = 300;
@@ -56,8 +61,8 @@ void AServerActor::StartServer()
 
 		getInteractionObj->ClearData();
 		getInteractionObj->uniqId = GetUnitUniqId();
-		getInteractionObj->x = FMath::RandRange(0, 5000);
-		getInteractionObj->y = FMath::RandRange(0, 5000);
+		getInteractionObj->x = FMath::RandRange(0, gameMode->mapSize);
+		getInteractionObj->y = FMath::RandRange(0, gameMode->mapSize);
 		getInteractionObj->rot = FMath::RandRange(0, 360);
 		interactionMap.Emplace(getInteractionObj->uniqId, getInteractionObj);
 	}

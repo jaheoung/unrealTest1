@@ -33,7 +33,7 @@ void UMinimapWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	UWorld* world = GetWorld();
 	AFirstGameGameModeBase* gameMode = world->GetAuthGameMode<AFirstGameGameModeBase>();
 
-	if (gameMode == nullptr || gameMode->mapSize <= 0.0)
+	if (gameMode == nullptr || gameMode->mapSize <= 0.0 || gameMode->myUnit == nullptr)
 		return;
 
 	if (isInit == false)
