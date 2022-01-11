@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "DrawDebugHelpers.h"
 #include "hpBarWidget.h"
 #include "HUDWidget.h"
 #include "InteractionActor.h"
@@ -14,10 +15,14 @@
 #include "MyCamActor.h"
 #include "MyUnit.h"
 #include "MyNpc.h"
+#include "MyPlayerController.h"
 #include "Weapon.h"
 #include "ServerActor.h"
+#include "ToolMeshActor.h"
+#include "Camera/CameraComponent.h"
 #include "Commandlets/GatherTextCommandlet.h"
 #include "Components/WidgetComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 AFirstGameGameModeBase::AFirstGameGameModeBase()
 {
@@ -38,16 +43,57 @@ void AFirstGameGameModeBase::StartPlay()
 {
 	Super::StartPlay();
 
-	// 툴이 실행중인지 확인.
-	ReadToolSetting();
-
-	if (isOnMapTool == true) // 맵툴이 실행되어 있다면.
-		return;
-
 	UWorld* world = GetWorld();
 
 	if (world == nullptr)
 		return;;
+	
+	characterCam = world->SpawnActor<AMyCamActor>();
+	
+	AMyPlayerController* PlayerController = Cast<AMyPlayerController>(world->GetFirstPlayerController());
+
+	if (PlayerController != nullptr)
+	{
+		PlayerController->bAutoManageActiveCameraTarget = false;
+		PlayerController->bShowMouseCursor = true;
+		PlayerController->bEnableClickEvents = true;
+
+		if (characterCam != nullptr)
+			PlayerController->SetViewTarget(characterCam);
+
+		characterCam->EnableInput(PlayerController);
+	}
+
+	// height map 로드.
+	ReadHeightMap();
+	
+	// 툴이 실행중인지 확인.
+	ReadToolSetting();
+
+	if (isOnMapTool == true) // 맵툴이 실행되어 있다면.
+	{
+		if (characterCam != nullptr)
+		{
+			// AToolMeshActor* toolActor = world->SpawnActor<AToolMeshActor>();
+			// int width = (int)(mapSize / (float)10);
+			// toolActor->Create(width, width, 10);
+			// toolActor->SetActorLocation(FVector(0, 0, 3000));
+
+			
+			//DrawDebugSolidPlane(world, FPlane(0,0,1,1), FVector(mapSize / 2, mapSize / 2, 0), mapSize / 2, FColor::Blue, true);
+
+			PlayerController->isMapToolMode = true;
+			PlayerController->toolMapSize = mapSize;
+			PlayerController->toolMapGap = 100;
+
+			UCameraComponent* cam = characterCam->GetCameraComponent();
+			cam->ProjectionMode = ECameraProjectionMode::Orthographic;
+			cam->OrthoWidth = 35000;
+			characterCam->SetActorLocation(FVector(9400, 8800, 17500));
+			characterCam->SetActorRotation(FRotator(-90, 0, 0));
+		}
+		return;
+	}
 	
 	serverActor = world->SpawnActor<AServerActor>();
 
@@ -56,14 +102,8 @@ void AFirstGameGameModeBase::StartPlay()
 		serverActor->ansDelegate.BindUObject(this, &AFirstGameGameModeBase::AnsCallback);
 	}
 
-	characterCam = world->SpawnActor<AMyCamActor>();
-	characterCam->EnableInput(GetWorld()->GetFirstPlayerController());
-
 	// hud 붙임.
 	OpenWidget(WIDGET_TYPE::HUD);
-
-	// height map 로드.
-	ReadHeightMap();
 
 	serverActor->StartServer();
 }
@@ -237,6 +277,22 @@ void AFirstGameGameModeBase::InitPlayerController()
 
 	if (PlayerController != nullptr)
 	{
+		EnableInput(PlayerController);
+		
+		InputComponent->BindAxis("Forward", myUnit, &AMyUnit::Forward);
+		InputComponent->BindAxis("Side", myUnit, &AMyUnit::Side);
+		InputComponent->BindAction("WheelUp", IE_Pressed, this, &AFirstGameGameModeBase::ZoomIn);
+		InputComponent->BindAction("WheelDown", IE_Pressed, this, &AFirstGameGameModeBase::ZoomOut);
+		InputComponent->BindAction("DefaultSkill", IE_Pressed, myUnit, &AMyUnit::DefaultSkill);
+		InputComponent->BindAction("EvationSkill", IE_Pressed, myUnit, &AMyUnit::EvationSkill);
+		InputComponent->BindAction("TestButton", IE_Pressed, this, &AFirstGameGameModeBase::TestButton);
+	}
+
+	/*
+	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+
+	if (PlayerController != nullptr)
+	{
 		PlayerController->bAutoManageActiveCameraTarget = false;
 		PlayerController->bShowMouseCursor = true;
 
@@ -255,7 +311,7 @@ void AFirstGameGameModeBase::InitPlayerController()
 
 		//UPlayerInput::AddEngineDefinedActionMapping(FInputActionKeyMapping("Jump", EKeys::N, 0, 0, 0, 0));
 		//FInputActionKeyMapping jump("Jump", EKeys::SpaceBar, 0, 0, 0, 0);
-	}
+	}*/
 }
 
 void AFirstGameGameModeBase::AppearMyPlayer(TSharedPtr<FAnsPCAppearPacket> packet)

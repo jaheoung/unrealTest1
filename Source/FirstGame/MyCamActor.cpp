@@ -51,7 +51,7 @@ void AMyCamActor::BeginPlay()
 // Called every frame
 void AMyCamActor::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
+  	Super::Tick(DeltaTime);
 
 	if (hasChaseTarget == false)
 		return;

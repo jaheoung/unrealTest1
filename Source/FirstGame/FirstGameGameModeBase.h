@@ -35,7 +35,7 @@ public:
 	AServerActor*serverActor;
 
 	TArray<float> heightMapdatas;
-	int mapSize = -1;
+	int mapSize = 18900; // 내 맵 기본 사이즈.
 	int heightMapWidth = 0;
 	float heightMapRate = 0.0;
 	float GetHeight(float& x, float&y);
@@ -102,6 +102,5 @@ private:
 	void AppearInteractionObj(TSharedPtr<FAnsInteractionAppearPacket> packet);
 	void DisappearInteractionObj(TSharedPtr<FAnsInteractionDisappearPacket> packet);
 	void UpdateInventory(TSharedPtr<FAnsUpdateInventoryPacket> packet);
-	
 	
 };

@@ -7,6 +7,7 @@
 #include "Components/EditableText.h"
 #include <fstream>
 #include <string>
+#include <vector>
 
 void UMapToolWidget::NativeConstruct()
 {
@@ -148,6 +149,44 @@ void UMapToolWidget::SetMapToolOnOff(bool&& isOn)
 	heightFile.write((char*)&isOn, sizeof(bool)); // 첫번째는 맵툴용으로 사용.
 
 	heightFile.close();
+
+
+	// std::string changeProp = "bUseMouseForTouch";
+	//
+	// FString configPath = FPaths::ProjectConfigDir();
+	// configPath.Append(TEXT("DefaultInput.ini"));
+	// std::ifstream readInputSettingFile(*configPath, std::ios::in);
+	//
+	// std::vector<std::string> strs;  
+	// if (readInputSettingFile.is_open())
+	// {
+	// 	std::string str;
+	// 	while (!readInputSettingFile.eof())
+	// 	{
+	// 		std::getline(readInputSettingFile, str);
+	//
+	// 		std::string::size_type pos = str.find(changeProp); 
+	// 		if (pos != std::string::npos)
+	// 		    str.replace(pos, str.length(), changeProp.append(isOn ? "=False\n" : "=True\n"));
+	// 		else
+	// 			str.push_back('\n');
+	//
+	// 		strs.push_back(str);
+	// 	}
+	// 	readInputSettingFile.close();
+	// }
+	//
+	// std::ofstream writeInputSettingFile(*configPath, std::ios::out);
+	//
+	// if (writeInputSettingFile.is_open())
+	// {
+	// 	for (std::vector<std::string>::iterator iter = strs.begin(); iter != strs.end(); ++iter)
+	// 	{
+	// 		writeInputSettingFile.write((char*)((*iter).c_str()), (*iter).size());
+	// 	}
+	// 	
+	// 	writeInputSettingFile.close();
+	// }
 }
 
 void UMapToolWidget::NativeDestruct()
