@@ -28,6 +28,8 @@ public:
 	class UButton* imageSaveButton;
 	UPROPERTY(meta=(BindWidget))
 	class UButton* heightMapSaveButton;
+	UPROPERTY(meta=(BindWidget))
+	class UButton* pathGridSaveButton;
 
 	virtual void NativeConstruct() override;
 
@@ -35,6 +37,8 @@ public:
 	void ImageSaveClick();
 	UFUNCTION()
 	void HeightMapSaveClick();
+	UFUNCTION()
+	void PathGridSaveClick();
 	UFUNCTION()
 	void ChangeMapSize(const FText& txt);
 	UFUNCTION()

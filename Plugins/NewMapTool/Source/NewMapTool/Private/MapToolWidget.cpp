@@ -9,6 +9,9 @@
 #include <string>
 #include <vector>
 
+// #include "../../../../../Source/FirstGame/MyPlayerController.h"
+// #include "../../../../../Source/FirstGame/ToolMeshActor.h"
+
 void UMapToolWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -23,6 +26,7 @@ void UMapToolWidget::NativeConstruct()
 	
 	imageSaveButton->OnClicked.AddDynamic(this, &UMapToolWidget::ImageSaveClick);
 	heightMapSaveButton->OnClicked.AddDynamic(this, &UMapToolWidget::HeightMapSaveClick);
+	pathGridSaveButton->OnClicked.AddDynamic(this, &UMapToolWidget::PathGridSaveClick);
 
 	SetMapToolOnOff(true);
 }
@@ -102,10 +106,10 @@ void UMapToolWidget::HeightMapSaveClick()
 	TArray<float> mdata;
 	startPoint.X = startPoint.Y = 0;
 	for (int x = 0; x < mapSize; x += mapCheckGap) // top뷰 기준 위쪽 방향.
-		{
+	{
 		startPoint.X = x;
 		for (int y = 0; y < mapSize; y += mapCheckGap) // top뷰 기준 오른쪽 방향.
-			{
+		{
 			startPoint.Y = y;	
 			if (GEditor->PlayWorld->LineTraceSingleByChannel(hitResult, startPoint, startPoint + downVec, ECollisionChannel::ECC_Visibility,
 				FCollisionQueryParams::DefaultQueryParam, FCollisionResponseParams::DefaultResponseParam))
@@ -116,8 +120,8 @@ void UMapToolWidget::HeightMapSaveClick()
 			{
 				mdata.Emplace(0);
 			}
-			}
 		}
+	}
 
 	heightFile.write((char*)(mdata.GetData()), sizeof(float) *mdata.Num());
 
@@ -127,6 +131,28 @@ void UMapToolWidget::HeightMapSaveClick()
 
 	GEditor->OnModalMessageDialog(EAppMsgType::Ok, FText::FromString(TEXT("저장되었습니다.")), FText::FromString(TEXT("알림")));
 }
+
+void UMapToolWidget::PathGridSaveClick()
+{
+	// AMyPlayerController* PlayerController = Cast<AMyPlayerController>(GEditor->PlayWorld->GetFirstPlayerController());
+	//
+	// AToolMeshActor* toolMesh = PlayerController->toolMeshActor;
+	//
+	// if (toolMesh == nullptr)
+	// 	return;;
+	//
+	// FString path = FPaths::ProjectDir();
+	// path.Append(TEXT("pathGrid.bin"));
+	// std::ofstream pathGridFile(*path, std::ios::out | std::ios::binary);
+	//
+	// // 인게임에서 index 를 읽어 x,y 변환 후 x ~ x+spacing, y ~ y+spacing 을 한 블럭으로 보면 될듯.
+	// pathGridFile.write((char*)&(toolMesh->spacing), sizeof(int32));
+	//
+	// pathGridFile.write((char*)&(toolMesh->xysByIndex), sizeof(bool) * toolMesh->xysByIndex.Num());
+	//
+	// pathGridFile.close();
+}
+
 
 void UMapToolWidget::ChangeMapSize(const FText& txt)
 {

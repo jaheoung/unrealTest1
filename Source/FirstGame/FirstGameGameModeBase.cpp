@@ -74,17 +74,9 @@ void AFirstGameGameModeBase::StartPlay()
 	{
 		if (characterCam != nullptr)
 		{
-			// AToolMeshActor* toolActor = world->SpawnActor<AToolMeshActor>();
-			// int width = (int)(mapSize / (float)10);
-			// toolActor->Create(width, width, 10);
-			// toolActor->SetActorLocation(FVector(0, 0, 3000));
-
-			
-			//DrawDebugSolidPlane(world, FPlane(0,0,1,1), FVector(mapSize / 2, mapSize / 2, 0), mapSize / 2, FColor::Blue, true);
-
 			PlayerController->isMapToolMode = true;
 			PlayerController->toolMapSize = mapSize;
-			PlayerController->toolMapGap = 100;
+			PlayerController->toolMapGap = 300;
 
 			UCameraComponent* cam = characterCam->GetCameraComponent();
 			cam->ProjectionMode = ECameraProjectionMode::Orthographic;

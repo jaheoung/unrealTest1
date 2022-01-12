@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "ProceduralMeshComponent.h"
+#include "Vec2i.h"
 #include "GameFramework/Actor.h"
 #include "ToolMeshActor.generated.h"
 
@@ -16,10 +17,16 @@ public:
 	// Sets default values for this actor's properties
 	AToolMeshActor();
 
-	void Create(int32 _width, int32 _height, float _spacing);
-
 	class UProceduralMeshComponent* pm;
+	TArray<pf::Vec2i> xys;
+	// xys 에 입력된 x,y 를 1차원 배열의 해당 인덱스 위치에 true 를 입력한다.
+	TArray<bool> xysByIndex;
+	int32 spacing;
 
+	void CreatePlane(int32 _width, int32 _height, float _spacing);
+	// xys 배열을 변경하고 불러주면 그려준다.
+	void CreateCusXYPlane(int32 _spacing);
+	
 protected:
 	
 	TArray<FVector> vertices;
@@ -31,7 +38,6 @@ protected:
 	
 	int32 height;
 	int32 width;
-	float spacing;
 	bool generateMesh;
 	
 	void GenerateVertices();

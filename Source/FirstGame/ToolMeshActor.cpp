@@ -13,7 +13,42 @@ AToolMeshActor::AToolMeshActor()
 	pm->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 }
 
-void AToolMeshActor::Create(int32 _width, int32 _height, float _spacing)
+void AToolMeshActor::CreateCusXYPlane(int _spacing)
+{
+	spacing = _spacing;
+	
+	int tris[6] = {0,2,1,3,4,5};
+
+	int halfSpacing = (int)(_spacing / 2.0);
+
+	for (int i = 0, k = xys.Num(); i < k; ++i)
+	{
+		pf::Vec2i v = xys[i];
+
+		vertices.Emplace(v.x + halfSpacing, v.y+ halfSpacing, 0);
+		vertices.Emplace(v.x + spacing+ halfSpacing, v.y+ halfSpacing, 0);
+		vertices.Emplace(v.x+ halfSpacing, v.y + spacing+ halfSpacing, 0);
+
+		vertices.Emplace(v.x + spacing+ halfSpacing, v.y+ halfSpacing, 0);
+		vertices.Emplace(v.x+ halfSpacing, v.y + spacing+ halfSpacing, 0);
+		vertices.Emplace(v.x + spacing+ halfSpacing, v.y + spacing+ halfSpacing, 0);
+
+		for (int q = 0; q < 6; ++q)
+		{
+			triangles.Emplace(tris[q] + i * 6);
+
+			normals.Emplace(FVector(0.0f, 0.0f, 1.0f));
+			uvs.Emplace(FVector2D(0, 0));
+			tangents.Emplace(FProcMeshTangent(1.0f, 0.0f, 0.0f));
+			vertexColors.Emplace(FLinearColor(1.0f, 0.0f, 0.0f, 1.0f));
+		}
+	}
+
+	pm->CreateMeshSection_LinearColor(0, vertices, triangles, normals, uvs, vertexColors, tangents, false);
+}
+
+
+void AToolMeshActor::CreatePlane(int32 _width, int32 _height, float _spacing)
 {
 	width = _width;
 	height = _height;
@@ -24,7 +59,6 @@ void AToolMeshActor::Create(int32 _width, int32 _height, float _spacing)
 		generateMesh = true;
 
 		ClearMeshData();
-
 		GenerateVertices();
 		GenerateTriangles();
 	
@@ -59,7 +93,7 @@ void AToolMeshActor::GenerateTriangles()
 			triangles.Emplace(x + (y * width));					//current vertex
 			triangles.Emplace(x + (y * width) + width);			//current vertex + row
 			triangles.Emplace(x + (y * width) + width + 1);		//current vertex + row + one right
-
+	
 			triangles.Emplace(x + (y * width));					//current vertex
 			triangles.Emplace(x + (y * width) + width + 1);		//current vertex + row + one right
 			triangles.Emplace(x + (y * width) + 1);				//current vertex + one right
