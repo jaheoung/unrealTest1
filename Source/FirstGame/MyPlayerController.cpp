@@ -60,6 +60,7 @@ void AMyPlayerController::OnMouseDownAxis(float amount)
 					y = y * toolMapGap + planeSize;
 					
 					toolMeshActor->xys.Emplace(pf::Vec2i(x, y));
+					toolMeshActor->xysByIndex[index] = true;
 					toolMeshActor->CreateCusXYPlane(toolMapGap);
 				}
 			}

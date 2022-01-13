@@ -41,6 +41,7 @@ public class NewMapTool : ModuleRules
 				"UMG",
 				"UnrealEd",
 				"Blutility",
+				"FirstGame"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

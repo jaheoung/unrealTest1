@@ -16,6 +16,8 @@ AToolMeshActor::AToolMeshActor()
 void AToolMeshActor::CreateCusXYPlane(int _spacing)
 {
 	spacing = _spacing;
+
+	ClearMeshData();
 	
 	int tris[6] = {0,2,1,3,4,5};
 

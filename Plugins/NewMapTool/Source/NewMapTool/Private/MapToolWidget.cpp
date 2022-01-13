@@ -9,8 +9,8 @@
 #include <string>
 #include <vector>
 
-// #include "../../../../../Source/FirstGame/MyPlayerController.h"
-// #include "../../../../../Source/FirstGame/ToolMeshActor.h"
+#include "../../../../../Source/FirstGame/MyPlayerController.h"
+#include "../../../../../Source/FirstGame/ToolMeshActor.h"
 
 void UMapToolWidget::NativeConstruct()
 {
@@ -134,23 +134,25 @@ void UMapToolWidget::HeightMapSaveClick()
 
 void UMapToolWidget::PathGridSaveClick()
 {
-	// AMyPlayerController* PlayerController = Cast<AMyPlayerController>(GEditor->PlayWorld->GetFirstPlayerController());
-	//
-	// AToolMeshActor* toolMesh = PlayerController->toolMeshActor;
-	//
-	// if (toolMesh == nullptr)
-	// 	return;;
-	//
-	// FString path = FPaths::ProjectDir();
-	// path.Append(TEXT("pathGrid.bin"));
-	// std::ofstream pathGridFile(*path, std::ios::out | std::ios::binary);
-	//
-	// // 인게임에서 index 를 읽어 x,y 변환 후 x ~ x+spacing, y ~ y+spacing 을 한 블럭으로 보면 될듯.
-	// pathGridFile.write((char*)&(toolMesh->spacing), sizeof(int32));
-	//
-	// pathGridFile.write((char*)&(toolMesh->xysByIndex), sizeof(bool) * toolMesh->xysByIndex.Num());
-	//
-	// pathGridFile.close();
+	AMyPlayerController* PlayerController = Cast<AMyPlayerController>(GEditor->PlayWorld->GetFirstPlayerController());
+	
+	AToolMeshActor* toolMesh = PlayerController->toolMeshActor;
+	
+	if (toolMesh == nullptr)
+		return;;
+	
+	FString path = FPaths::ProjectDir();
+	path.Append(TEXT("pathGrid.bin"));
+	std::ofstream pathGridFile(*path, std::ios::out | std::ios::binary);
+	
+	// 인게임에서 index 를 읽어 x,y 변환 후 x ~ x+spacing, y ~ y+spacing 을 한 블럭으로 보면 될듯.
+	pathGridFile.write((char*)&(toolMesh->spacing), sizeof(int32));
+	
+	pathGridFile.write((char*)&(toolMesh->xysByIndex), sizeof(bool) * toolMesh->xysByIndex.Num());
+	
+	pathGridFile.close();
+
+	GEditor->OnModalMessageDialog(EAppMsgType::Ok, FText::FromString(TEXT("저장되었습니다.")), FText::FromString(TEXT("알림")));
 }
 
 
