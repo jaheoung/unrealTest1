@@ -30,6 +30,8 @@ public:
 	class UButton* heightMapSaveButton;
 	UPROPERTY(meta=(BindWidget))
 	class UButton* pathGridSaveButton;
+	UPROPERTY(meta=(BindWidget))
+	class UButton* pathGridLoadButton;
 
 	virtual void NativeConstruct() override;
 
@@ -39,6 +41,8 @@ public:
 	void HeightMapSaveClick();
 	UFUNCTION()
 	void PathGridSaveClick();
+	UFUNCTION()
+	void PathGridLoadClick();
 	UFUNCTION()
 	void ChangeMapSize(const FText& txt);
 	UFUNCTION()

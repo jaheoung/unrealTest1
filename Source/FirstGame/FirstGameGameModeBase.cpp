@@ -75,8 +75,7 @@ void AFirstGameGameModeBase::StartPlay()
 		if (characterCam != nullptr)
 		{
 			PlayerController->isMapToolMode = true;
-			PlayerController->toolMapSize = mapSize;
-			PlayerController->toolMapGap = 300;
+			PlayerController->toolCompressionMapSize = mapSize;
 
 			UCameraComponent* cam = characterCam->GetCameraComponent();
 			cam->ProjectionMode = ECameraProjectionMode::Orthographic;
@@ -128,7 +127,8 @@ void AFirstGameGameModeBase::ReadHeightMap()
 
 		readFile.seekg(0, readFile.end);
 		size_t fileSize = readFile.tellg();
-		readFile.seekg(0, readFile.beg);
+		fileSize -= sizeof(int);
+		readFile.seekg(sizeof(int));
 	
 		size_t arrSize = fileSize / sizeof(float);
 		float* buf = new float[arrSize];

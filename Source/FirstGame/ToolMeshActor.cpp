@@ -113,4 +113,27 @@ void AToolMeshActor::ClearMeshData()
 	tangents.Empty();
 }
 
+void AToolMeshActor::ConvertIndexToXys(int mapSize, int compression)
+{
+	if (xysByIndex.Num() == 0)
+		return;
+
+	xys.Empty();
+
+	int compressionMapSize = mapSize / compression;
+	int x, y = 0;
+	for (int i = 0, k = xysByIndex.Num(); i < k; ++i)
+	{
+		if (xysByIndex[i])
+		{
+			x = i / compressionMapSize;
+			y = i % compressionMapSize;
+			x = x * compression;
+			y = y * compression;
+			xys.Emplace(pf::Vec2i(x,y));
+		}
+	}
+}
+
+
 

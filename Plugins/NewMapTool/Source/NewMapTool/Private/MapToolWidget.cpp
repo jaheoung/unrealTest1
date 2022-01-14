@@ -11,6 +11,7 @@
 
 #include "../../../../../Source/FirstGame/MyPlayerController.h"
 #include "../../../../../Source/FirstGame/ToolMeshActor.h"
+#include "FirstGame/FirstGameGameModeBase.h"
 
 void UMapToolWidget::NativeConstruct()
 {
@@ -27,6 +28,7 @@ void UMapToolWidget::NativeConstruct()
 	imageSaveButton->OnClicked.AddDynamic(this, &UMapToolWidget::ImageSaveClick);
 	heightMapSaveButton->OnClicked.AddDynamic(this, &UMapToolWidget::HeightMapSaveClick);
 	pathGridSaveButton->OnClicked.AddDynamic(this, &UMapToolWidget::PathGridSaveClick);
+	pathGridLoadButton->OnClicked.AddDynamic(this, &UMapToolWidget::PathGridLoadClick);
 
 	SetMapToolOnOff(true);
 }
@@ -148,12 +150,68 @@ void UMapToolWidget::PathGridSaveClick()
 	// 인게임에서 index 를 읽어 x,y 변환 후 x ~ x+spacing, y ~ y+spacing 을 한 블럭으로 보면 될듯.
 	pathGridFile.write((char*)&(toolMesh->spacing), sizeof(int32));
 	
-	pathGridFile.write((char*)&(toolMesh->xysByIndex), sizeof(bool) * toolMesh->xysByIndex.Num());
+	pathGridFile.write((char*)toolMesh->xysByIndex.GetData(), sizeof(bool) * toolMesh->xysByIndex.Num());
 	
 	pathGridFile.close();
 
 	GEditor->OnModalMessageDialog(EAppMsgType::Ok, FText::FromString(TEXT("저장되었습니다.")), FText::FromString(TEXT("알림")));
 }
+
+void UMapToolWidget::PathGridLoadClick()
+{
+	
+	AFirstGameGameModeBase* gameMode = GEditor->PlayWorld->GetAuthGameMode<AFirstGameGameModeBase>();
+
+	if (gameMode == nullptr)
+		return;
+	
+	AMyPlayerController* PlayerController = Cast<AMyPlayerController>(GEditor->PlayWorld->GetFirstPlayerController());
+
+	PlayerController->InitToolMeshActor(true);
+	
+    AToolMeshActor* toolMesh = PlayerController->toolMeshActor;
+    
+    if (toolMesh == nullptr)
+    	return;;
+    
+    FString path = FPaths::ProjectDir();
+    path.Append(TEXT("pathGrid.bin"));
+    std::ifstream pathGridFile(*path, std::ios::in | std::ios::binary);
+
+	if (pathGridFile.is_open())
+	{
+		int32 spacing = 0;
+		pathGridFile.read((char*)&spacing, sizeof(int32));
+
+		PlayerController->toolMapGap = spacing;
+	
+		pathGridFile.seekg(0, pathGridFile.end);
+		size_t fileSize = pathGridFile.tellg();
+		fileSize -= sizeof(int32);
+		pathGridFile.seekg(sizeof(int32));
+	
+		size_t arrSize = fileSize / sizeof(bool);
+	
+		bool* buf = new bool[arrSize];
+	
+		pathGridFile.read((char *) buf, fileSize);
+	
+		toolMesh->xysByIndex.Empty();
+		toolMesh->xysByIndex.Append(buf, arrSize);
+
+		delete[] buf;
+
+		pathGridFile.close();
+
+		UE_LOG(LogTemp, Warning, TEXT("size ==== %d"), toolMesh->xysByIndex.Num());
+	
+		toolMesh->ConvertIndexToXys(gameMode->mapSize, spacing);
+		toolMesh->CreateCusXYPlane(spacing);
+
+		GEditor->OnModalMessageDialog(EAppMsgType::Ok, FText::FromString(TEXT("로드 완료.")), FText::FromString(TEXT("알림")));
+	}
+}
+
 
 
 void UMapToolWidget::ChangeMapSize(const FText& txt)

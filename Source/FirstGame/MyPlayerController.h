@@ -16,12 +16,14 @@ class FIRSTGAME_API AMyPlayerController : public APlayerController
 
 public:
 	bool isMapToolMode = false;
-	// 맵 가로 사이즈 (정사각형)
-	int toolMapSize = -1;
+	// 툴용 toolMapGap 만큼 압축된 맵 가로 사이즈 (정사각형)
+	int toolCompressionMapSize = -1;
 	// 이 간격으로 그리드를 쪼갠다. (맵 가로 사이즈의 약수만 가능)
-	int toolMapGap = 10;;
+	int toolMapGap = 300;
 	bool isChangedData = false;
 	class AToolMeshActor* toolMeshActor;
+
+	void InitToolMeshActor(bool needMeshEmpty);
 	
 private:
 	void OnMouseUp();
