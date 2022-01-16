@@ -15,18 +15,30 @@ namespace pf
 	m_targetPos(0, 0),
 	m_nrOfDirections(4)
 	{
-		m_directions = { { -1, 0 }, { 1, 0 }, { 0, 1 }, { 0, -1 },
-						 { -1, -1 }, { 1, 1 }, { -1, 1 }, { 1, -1 } };
+		// m_directions = { { -1, 0 }, { 1, 0 }, { 0, 1 }, { 0, -1 },
+		// 				 { -1, -1 }, { 1, 1 }, { -1, 1 }, { 1, -1 } };
+		m_directions = { { 0, -1 }, { 0, 1 }, { 1, 0 }, { -1, 0 },
+						 { -1, -1 }, { 1, 1 }, { 1, -1 }, { -1, 1 } };
 	}
 
 	std::vector<Vec2i> AStar::findPath(const Vec2i& startPos, const Vec2i& targetPos, HeuristicFunction heuristicFunc, int weight)
 	{
 		m_startPos = startPos;
 		m_targetPos = targetPos;
+
+		m_startPos.x /= compressionSize;
+		m_startPos.y /= compressionSize;
+
+		m_targetPos.x /= compressionSize;
+		m_targetPos.y /= compressionSize;
+		
 		m_weight = weight;
 		m_heuristic = std::bind(heuristicFunc, _1, _2, _3);
 		m_cameFrom.resize(m_size);
 		m_closedList.resize(m_size, false);
+
+		std::fill(m_cameFrom.begin(), m_cameFrom.end(), Node());
+		std::fill(m_closedList.begin(), m_closedList.end(), false);
 
 		m_cameFrom[convertTo1D(m_startPos)].parent = m_startPos;
 		m_openList.push(Node(m_startPos, 0));
@@ -53,6 +65,10 @@ namespace pf
 				const auto neighborPos = currentPos + m_directions[i];
 				const auto neighborIndex = convertTo1D(neighborPos);
 
+				// UE_LOG(LogTemp, Warning, TEXT("check pos : %d, %d / index : %d / w : %d / isValid : %d / isBlocked : %d / isCloseList : %d"),
+				// 	neighborPos.x, neighborPos.y, neighborIndex, m_dimensions.x,
+				// 	(isValid(neighborPos)) ? 1 : 0, (isBlocked(neighborIndex)) ? 1 : 0, (!isBlocked(neighborIndex) && m_closedList[neighborIndex]) ? 1 : 0);
+
 				if (!isValid(neighborPos) || isBlocked(neighborIndex) || m_closedList[neighborIndex] == true)
 				{
 					continue;
@@ -78,54 +94,108 @@ namespace pf
 		std::vector<Vec2i> path;
 		auto currentPos = m_targetPos;
 		auto currentIndex = convertTo1D(currentPos);
+		// UE_LOG(LogTemp, Warning, TEXT("m tar pos %f, %f   idx : %d"), m_targetPos.x, m_targetPos.y, currentIndex);
 
+		size_t checkSize = m_cameFrom.size();
 		while (!(m_cameFrom[currentIndex].parent == currentPos))
 		{
 			path.push_back(currentPos);
 			currentPos = m_cameFrom[currentIndex].parent;
 			currentIndex = convertTo1D(currentPos);
+
+			if (currentIndex < 0 || currentIndex >= checkSize)
+			{
+				break;
+			}
 		}
 
 		std::reverse(path.begin(), path.end());
 
+		for (auto& elem : path)
+		{
+			elem.x *= compressionSize;
+			elem.y *= compressionSize;
+		}
+
 		return path;
 	}
 
-	void AStar::loadMap(const std::string& fileName)
+	void AStar::loadMap()
 	{
-		std::ifstream file(fileName);
+		FString path = FPaths::ProjectDir();
+		path.Append(TEXT("pathGrid.bin"));
+		std::ifstream pathGridFile(*path, std::ios::in | std::ios::binary);
 		
-		if (file.is_open())
+		if (pathGridFile.is_open())
 		{
-			std::string line;
-			while (std::getline(file, line))
-			{
-				if (line.find('w') != std::string::npos)
-				{
-					line.erase(std::remove_if(line.begin(), line.end(), 
-						[](unsigned char c) { return (c == 'w' || c == ':') ? true : false; }), line.end());
-					m_dimensions.x = std::stoi(line);
-				}
-				else if (line.find('h') != std::string::npos)
-				{
-					line.erase(std::remove_if(line.begin(), line.end(),
-						[](unsigned char c) { return (c == 'h' || c == ':') ? true : false; }), line.end());
-					m_dimensions.y = std::stoi(line);
-				}
-				else
-				{
-					line.erase(std::remove(line.begin(), line.end(), ','), line.end());
+			size_t exceptSize = sizeof(int32);
+			int32 spacing = 0;
+        	pathGridFile.read((char*)&spacing, exceptSize);
+			compressionSize = spacing;
 
-					for (const auto& c : line)
-					{
-						m_grid.push_back(c - 48);
-					}
-				}
+			pathGridFile.seekg(0, pathGridFile.end);
+			size_t fileSize = pathGridFile.tellg();
+			fileSize -= exceptSize;
+			pathGridFile.seekg(exceptSize);
+
+			size_t arrSize = fileSize / sizeof(bool);
+			bool* buf = new bool[arrSize];
+			pathGridFile.read((char *) buf, fileSize);
+
+			// 정사각형이고 spacing 만큼 압축된 크기이다, 그리고 x,y 로부터 +spacing 만큼 사각영역을 색칠했다고 보면 된다.
+			int compressionMapW = FMath::Sqrt(arrSize);
+			m_dimensions.x = compressionMapW;
+			m_dimensions.y = compressionMapW;
+			m_size = m_dimensions.x * m_dimensions.y;
+
+			// 압축한 그리드를 그냥 사용하고 결과 경로의 x,y 를 spacing 만큼 키워서 사용하기로 함.
+			m_grid.clear();
+			for (int i = 0; i < arrSize; ++i)
+			{
+				m_grid.push_back(buf[i] == true ? 1 : 0);
 			}
 
-			m_size = m_dimensions.x * m_dimensions.y;
-			file.close();
+			UE_LOG(LogTemp, Warning, TEXT("load grid spacing : %d, arrSize : %d, mapW : %d, mapSize : %d"), 
+					spacing, arrSize, m_dimensions.x, m_size);
+
+			delete[] buf;
+        		
+			pathGridFile.close();
+			
 		}
+		// std::ifstream file(fileName);
+		//
+		// if (file.is_open())
+		// {
+		// 	std::string line;
+		// 	while (std::getline(file, line))
+		// 	{
+		// 		if (line.find('w') != std::string::npos)
+		// 		{
+		// 			line.erase(std::remove_if(line.begin(), line.end(), 
+		// 				[](unsigned char c) { return (c == 'w' || c == ':') ? true : false; }), line.end());
+		// 			m_dimensions.x = std::stoi(line);
+		// 		}
+		// 		else if (line.find('h') != std::string::npos)
+		// 		{
+		// 			line.erase(std::remove_if(line.begin(), line.end(),
+		// 				[](unsigned char c) { return (c == 'h' || c == ':') ? true : false; }), line.end());
+		// 			m_dimensions.y = std::stoi(line);
+		// 		}
+		// 		else
+		// 		{
+		// 			line.erase(std::remove(line.begin(), line.end(), ','), line.end());
+		//
+		// 			for (const auto& c : line)
+		// 			{
+		// 				m_grid.push_back(c - 48);
+		// 			}
+		// 		}
+		// 	}
+		//
+		// 	m_size = m_dimensions.x * m_dimensions.y;
+		// 	file.close();
+		// }
 	}
 
 	void AStar::setDiagonalMovement(bool enable)
@@ -147,7 +217,7 @@ namespace pf
 	// Returns a 1D index based on a 2D coordinate using row-major layout
 	int AStar::convertTo1D(const Vec2i& pos) const
 	{
-		return (pos.y * m_dimensions.x) + pos.x;
+		return (pos.x * m_dimensions.x) + pos.y;
 	}
 
 	uint heuristic::manhattan(const Vec2i& v1, const Vec2i& v2, int weight)

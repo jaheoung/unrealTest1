@@ -6,6 +6,7 @@
 #include <ThirdParty/openexr/Deploy/OpenEXR-2.3.0/OpenEXR/include/ImathMath.h>
 
 #include "CoreMinimal.h"
+#include "Astar.h"
 #include "GameFramework/Actor.h"
 #include "Weapon.h"
 #include "NavigationSystem.h"
@@ -126,7 +127,7 @@ struct FUnitInfo
 		curPathIndex = 0;
 	}
 
-	void SetMove(FVector targetPos, UWorld* world)
+	void SetMove(FVector targetPos, UWorld* world, pf::AStar* astar)
 	{
 		if (targetPos != FVector::ZeroVector && lastTargetPoint == targetPos)
 			return;
@@ -142,20 +143,18 @@ struct FUnitInfo
 		if (navSys == nullptr)
 			return;
 
-		UNavigationPath* path = navSys->FindPathToLocationSynchronously(world, curPos, targetPos, NULL);
+		//UNavigationPath* path = navSys->FindPathToLocationSynchronously(world, curPos, targetPos, NULL);
 
-		int pathCount = path->PathPoints.Num();
+		auto path = astar->findPath(pf::Vec2i(curPos.X, curPos.Y), pf::Vec2i(targetPos.X, targetPos.Y), pf::heuristic::manhattan, 10);
+
+		int pathCount = path.size();
 
 		if (pathCount != myPath.Num())
 			myPath.SetNum(pathCount);
 
-		// PathPoints[0] 은 내 위치다.
-		// 모든 path의 z(위쪽)값은 해당 위치의 바운드 볼륨의 면의 위치이다.
 		for (int i = 0; i < pathCount; ++i)
 		{
-			FVector pathElem = path->PathPoints[i];
-			//pathElem.Z += 100; // 공중에 뜨게 하기 위해.
-			myPath[i] = pathElem;
+			myPath[i] = FVector(path[i].x, path[i].y, 0);
 		}
 
 		curPathIndex = 1;
@@ -650,6 +649,8 @@ class FIRSTGAME_API AServerActor : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AServerActor();
+
+	pf::AStar* astar;
 
 	void StartServer();
 

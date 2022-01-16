@@ -11,7 +11,6 @@
 
 #include "../../../../../Source/FirstGame/MyPlayerController.h"
 #include "../../../../../Source/FirstGame/ToolMeshActor.h"
-#include "FirstGame/FirstGameGameModeBase.h"
 
 void UMapToolWidget::NativeConstruct()
 {
@@ -159,12 +158,6 @@ void UMapToolWidget::PathGridSaveClick()
 
 void UMapToolWidget::PathGridLoadClick()
 {
-	
-	AFirstGameGameModeBase* gameMode = GEditor->PlayWorld->GetAuthGameMode<AFirstGameGameModeBase>();
-
-	if (gameMode == nullptr)
-		return;
-	
 	AMyPlayerController* PlayerController = Cast<AMyPlayerController>(GEditor->PlayWorld->GetFirstPlayerController());
 
 	PlayerController->InitToolMeshActor(true);
@@ -204,8 +197,9 @@ void UMapToolWidget::PathGridLoadClick()
 		pathGridFile.close();
 
 		UE_LOG(LogTemp, Warning, TEXT("size ==== %d"), toolMesh->xysByIndex.Num());
-	
-		toolMesh->ConvertIndexToXys(gameMode->mapSize, spacing);
+
+		int w = FMath::Sqrt(arrSize);
+		toolMesh->ConvertIndexToXys(w * spacing, spacing);
 		toolMesh->CreateCusXYPlane(spacing);
 
 		GEditor->OnModalMessageDialog(EAppMsgType::Ok, FText::FromString(TEXT("로드 완료.")), FText::FromString(TEXT("알림")));

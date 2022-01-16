@@ -18,13 +18,17 @@ void AServerActor::StartServer()
 {
 	myUnit = CreatePC();
 
+	astar = new pf::AStar();
+	astar->loadMap();
+	astar->setDiagonalMovement(true);
+
 	AFirstGameGameModeBase* gameMode = GetWorld()->GetAuthGameMode<AFirstGameGameModeBase>();
 	
 	if (myUnit != nullptr && myUnit.IsValid())
 	{
 		myUnit->ClearData();
 		myUnit->uniqId = GetUniqueID();
-		myUnit->SetPos(2500, 2500, 0);
+		myUnit->SetPos(5610, 3070, 0);
 		myUnit->rot = 0;
 		myUnit->weaponType = WEAPON_TYPE::SINGLE_SWORD;
 		myUnit->unitScale = 0.3f;
@@ -32,7 +36,9 @@ void AServerActor::StartServer()
 		pcMap.Emplace(myUnit->uniqId, myUnit);
 	}
 
-	for (int i = 0; i < 400; ++i)
+	return;
+
+	for (int i = 0; i < 40; ++i)
 	{
 		TSharedPtr<FNPCInfo> getNpc = CreateNPC();
 
@@ -213,7 +219,7 @@ void AServerActor::Tick(float DeltaTime)
 			// 이동 처리.
 			if (npcInfo->curPathIndex == 0)
 			{
-				npcInfo->SetMove(FVector(FMath::RandRange(0, 5000), FMath::RandRange(0, 5000), 0), GetWorld());
+				npcInfo->SetMove(FVector(FMath::RandRange(0, 5000), FMath::RandRange(0, 5000), 0), GetWorld(), astar);
 			}
 			else
 			{

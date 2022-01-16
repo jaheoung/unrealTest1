@@ -2,8 +2,13 @@
 
 
 #include "Unit.h"
+
+#include "Astar.h"
+#include "FirstGameGameModeBase.h"
+#include "InteractionActor.h"
 #include "NavigationSystem.h"
 #include "NavigationPath.h"
+#include "Vec2i.h"
 
 // Sets default values
 AUnit::AUnit()
@@ -38,21 +43,39 @@ void AUnit::SetMove(FVector targetPos)
 	if (navSys == nullptr)
 		return;
 	
-	UNavigationPath* path = navSys->FindPathToLocationSynchronously(GetWorld(), GetActorLocation(), targetPos, NULL);
+	//UNavigationPath* path = navSys->FindPathToLocationSynchronously(GetWorld(), GetActorLocation(), targetPos, NULL);
+	UWorld* world = GetWorld();
 
-	int pathCount = path->PathPoints.Num();
+	AFirstGameGameModeBase* gameMode = world->GetAuthGameMode<AFirstGameGameModeBase>();
+	pf::AStar* astar = gameMode->serverActor->astar;
+
+	FVector curPos = GetActorLocation();
+
+	auto path = astar->findPath(pf::Vec2i(curPos.X, curPos.Y), pf::Vec2i(8150, 5840), pf::heuristic::manhattan, 100);
+
+	int pathCount = path.size();
 
 	if (pathCount != myPath.Num())
 		myPath.SetNum(pathCount);
 
-	// PathPoints[0] 은 내 위치다.
-	// 모든 path의 z(위쪽)값은 해당 위치의 바운드 볼륨의 면의 위치이다.
 	for (int i = 0; i < pathCount; ++i)
 	{
-		FVector pathElem = path->PathPoints[i];
-		//pathElem.Z += 100; // 공중에 뜨게 하기 위해.
-		myPath[i] = pathElem;
+		myPath[i] = FVector(path[i].x, path[i].y, 0);
+		
+
+		// test
+		AInteractionActor* actor = world->SpawnActor<AInteractionActor>();
+		actor->SetActorLocation(FVector(path[i].x, path[i].y, 250));
 	}
+	
+	// PathPoints[0] 은 내 위치다.
+	// 모든 path의 z(위쪽)값은 해당 위치의 바운드 볼륨의 면의 위치이다.
+	// for (int i = 0; i < pathCount; ++i)
+	// {
+	// 	FVector pathElem = path->PathPoints[i];
+	// 	//pathElem.Z += 100; // 공중에 뜨게 하기 위해.
+	// 	myPath[i] = pathElem;
+	// }
 
 	curPathIndex = 1;
 }

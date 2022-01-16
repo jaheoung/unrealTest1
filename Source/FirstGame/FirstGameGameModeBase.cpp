@@ -7,6 +7,9 @@
 #include <string>
 #include <vector>
 
+#include "MyBaseWidget.h"
+#include "ServerActor.h"
+#include "ToolCameraActor.h"
 #include "DrawDebugHelpers.h"
 #include "hpBarWidget.h"
 #include "HUDWidget.h"
@@ -46,9 +49,7 @@ void AFirstGameGameModeBase::StartPlay()
 	UWorld* world = GetWorld();
 
 	if (world == nullptr)
-		return;;
-	
-	characterCam = world->SpawnActor<AMyCamActor>();
+		return;
 	
 	AMyPlayerController* PlayerController = Cast<AMyPlayerController>(world->GetFirstPlayerController());
 
@@ -57,11 +58,6 @@ void AFirstGameGameModeBase::StartPlay()
 		PlayerController->bAutoManageActiveCameraTarget = false;
 		PlayerController->bShowMouseCursor = true;
 		PlayerController->bEnableClickEvents = true;
-
-		if (characterCam != nullptr)
-			PlayerController->SetViewTarget(characterCam);
-
-		characterCam->EnableInput(PlayerController);
 	}
 
 	// height map 로드.
@@ -72,19 +68,31 @@ void AFirstGameGameModeBase::StartPlay()
 
 	if (isOnMapTool == true) // 맵툴이 실행되어 있다면.
 	{
-		if (characterCam != nullptr)
-		{
-			PlayerController->isMapToolMode = true;
-			PlayerController->toolCompressionMapSize = mapSize;
+		PlayerController->isMapToolMode = true;
+		PlayerController->toolCompressionMapSize = mapSize;
 
-			UCameraComponent* cam = characterCam->GetCameraComponent();
-			cam->ProjectionMode = ECameraProjectionMode::Orthographic;
-			cam->OrthoWidth = 35000;
-			characterCam->SetActorLocation(FVector(9400, 8800, 17500));
-			characterCam->SetActorRotation(FRotator(-90, 0, 0));
-		}
+		toolCam = world->SpawnActor<AToolCameraActor>();
+		toolCam->Rename(TEXT("Tool_Camera"));
+
+		PlayerController->SetViewTarget(toolCam);
+		toolCam->SetView();
+		toolCam->EnableInput(PlayerController);
+
+		EnableInput(PlayerController);
+		InputComponent->BindAction("WheelUp", IE_Pressed, toolCam, &AToolCameraActor::ZoomIn);
+		InputComponent->BindAction("WheelDown", IE_Pressed, toolCam, &AToolCameraActor::ZoomOut);
+		InputComponent->BindAxis("Forward", toolCam, &AToolCameraActor::Forward);
+		InputComponent->BindAxis("Side", toolCam, &AToolCameraActor::Side);
+		
 		return;
 	}
+
+	characterCam = world->SpawnActor<AMyCamActor>();
+
+	if (characterCam != nullptr)
+		PlayerController->SetViewTarget(characterCam);
+
+	characterCam->EnableInput(PlayerController);
 	
 	serverActor = world->SpawnActor<AServerActor>();
 
@@ -97,6 +105,22 @@ void AFirstGameGameModeBase::StartPlay()
 	OpenWidget(WIDGET_TYPE::HUD);
 
 	serverActor->StartServer();
+
+
+	// test
+	// int size = serverActor->astar->m_grid.size();
+	// int w = FMath::Sqrt(size);
+	// for (int i = 0; i < size; ++i)
+	// {
+	// 	if (serverActor->astar->m_grid[i])
+	// 	{
+	// 		int x = (i / w) * serverActor->astar->compressionSize;
+	// 		int y = (i % w) * serverActor->astar->compressionSize;
+	// 		AInteractionActor* actor = world->SpawnActor<AInteractionActor>();
+	// 		actor->SetActorLocation(FVector(x, y, 350));
+	// 	}
+	// }
+	
 }
 
 void AFirstGameGameModeBase::ReadToolSetting()
@@ -376,7 +400,7 @@ void AFirstGameGameModeBase::NpcMove(TSharedPtr<FAnsNpcMovePacket> packet)
 
 	if (getNpc != nullptr)
 	{
-		(*getNpc)->SetActorLocation(FVector(packet->x, packet->y, packet->z));
+		(*getNpc)->SetActorLocation(FVector(packet->x, packet->y, GetHeight(packet->x, packet->y)));
 		(*getNpc)->SetActorRotation(FRotator(0, packet->rot, 0));
 		(*getNpc)->SetAnim(NPC_STATE::RUN);
 	}

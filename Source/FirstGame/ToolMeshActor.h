@@ -19,7 +19,7 @@ public:
 
 	class UProceduralMeshComponent* pm;
 	// 입력된 x,y 지점을 시작점으로 사각 면은 그린다.
-	TArray<pf::Vec2i> xys;
+	TMap<int, pf::Vec2i> xys;
 	// xys 에 입력된 x,y 를 1차원 배열의 해당 인덱스 위치에 true 를 입력한다.
 	TArray<bool> xysByIndex;
 	int32 spacing;
@@ -29,7 +29,7 @@ public:
 	void CreateCusXYPlane(int32 _spacing);
 
 	// mapSize 는 실제 맵 width, compression 만큼 펼쳐서 좌표를 변환해준다.
-	void ConvertIndexToXys(int mapSize, int compression);
+	void ConvertIndexToXys(int mapSizeW, int compression);
 	
 protected:
 	

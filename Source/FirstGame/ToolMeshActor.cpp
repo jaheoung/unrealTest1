@@ -23,9 +23,10 @@ void AToolMeshActor::CreateCusXYPlane(int _spacing)
 
 	int halfSpacing = (int)(_spacing / 2.0);
 
-	for (int i = 0, k = xys.Num(); i < k; ++i)
+	int i = 0;
+	for (const auto& elem : xys)
 	{
-		pf::Vec2i v = xys[i];
+		pf::Vec2i v = elem.Value;
 
 		vertices.Emplace(v.x + halfSpacing, v.y+ halfSpacing, 0);
 		vertices.Emplace(v.x + spacing+ halfSpacing, v.y+ halfSpacing, 0);
@@ -44,6 +45,7 @@ void AToolMeshActor::CreateCusXYPlane(int _spacing)
 			tangents.Emplace(FProcMeshTangent(1.0f, 0.0f, 0.0f));
 			vertexColors.Emplace(FLinearColor(1.0f, 0.0f, 0.0f, 1.0f));
 		}
+		++i;
 	}
 
 	pm->CreateMeshSection_LinearColor(0, vertices, triangles, normals, uvs, vertexColors, tangents, false);
@@ -113,14 +115,14 @@ void AToolMeshActor::ClearMeshData()
 	tangents.Empty();
 }
 
-void AToolMeshActor::ConvertIndexToXys(int mapSize, int compression)
+void AToolMeshActor::ConvertIndexToXys(int mapSizeW, int compression)
 {
 	if (xysByIndex.Num() == 0)
 		return;
 
 	xys.Empty();
 
-	int compressionMapSize = mapSize / compression;
+	int compressionMapSize = mapSizeW / compression;
 	int x, y = 0;
 	for (int i = 0, k = xysByIndex.Num(); i < k; ++i)
 	{
@@ -130,7 +132,7 @@ void AToolMeshActor::ConvertIndexToXys(int mapSize, int compression)
 			y = i % compressionMapSize;
 			x = x * compression;
 			y = y * compression;
-			xys.Emplace(pf::Vec2i(x,y));
+			xys.Emplace(i, pf::Vec2i(x,y));
 		}
 	}
 }

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MyBaseWidget.h"
 #include "ServerActor.h"
 #include "GameFramework/GameModeBase.h"
 #include "FirstGameGameModeBase.generated.h"
@@ -11,6 +10,7 @@
 class AMyUnit;
 class AMyNpc;
 class AMyCamActor;
+class AToolCameraActor;
 class AServerActor;
 
 UENUM()
@@ -70,6 +70,8 @@ public:
 	float myUnitScale = 0.24;
 
 	AMyCamActor* characterCam;
+	
+	AToolCameraActor* toolCam;
 
 	virtual void StartPlay() override;
 	virtual void Tick(float DeltaSeconds) override;

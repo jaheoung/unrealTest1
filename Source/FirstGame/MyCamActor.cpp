@@ -45,7 +45,6 @@ void AMyCamActor::UpdateZoom()
 void AMyCamActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
