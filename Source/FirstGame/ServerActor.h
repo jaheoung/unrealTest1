@@ -51,6 +51,8 @@ struct FUnitInfo
     float rot;
 	// 유닛의 스케일.
     float unitScale;
+	// 이동 상태.
+	bool isMove;
 
 	// true 면 클라 기준 스폰 상태.
 	bool isSpawned;
@@ -121,6 +123,7 @@ struct FUnitInfo
 		isDie = false;
 		moveDelayGap = 0;
 		checkMoveDelay = 0;
+		isMove = false;
 	}
 
 	void StopMovePath()
@@ -206,13 +209,13 @@ struct FUnitInfo
 				dir = SetPos(nextPos.X, nextPos.Y, backZ).GetSafeNormal();
 				rot = GetRot(dir);
 			}
-
-			
+			isMove = true;
 		}
 		else
 		{
 			// 최종 목적지 도착.
 			curPathIndex = 0;
+			isMove = false;
 		}
 	}
 
@@ -448,6 +451,7 @@ struct FAnsNpcMovePacket : public FAnsPacket
 	float y;
 	float z;
 	float rot;
+	bool isMove;
 	
 	virtual PACKET_TYPE GetPacketType() override
 	{
@@ -463,6 +467,7 @@ struct FAnsNpcMovePacket : public FAnsPacket
 		y = 0;
 		z = 0;
 		rot = 0;
+		isMove = false;
 	}
 };
 

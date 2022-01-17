@@ -69,6 +69,7 @@ public:
 
 	float myUnitScale = 0.24;
 
+	TSubclassOf<AMyCamActor> characterCamClass;
 	AMyCamActor* characterCam;
 	
 	AToolCameraActor* toolCam;

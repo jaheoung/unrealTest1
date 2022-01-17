@@ -45,6 +45,12 @@ void AServerActor::StartServer()
 
 	for (int i = 0; i < 400; ++i)
 	{
+		float x = FMath::RandRange(0, gameMode->mapWidth);
+		float y = FMath::RandRange(0, gameMode->mapWidth);
+
+		if (astar->CanPos(x, y) == false)
+			continue;
+		
 		TSharedPtr<FNPCInfo> getNpc = CreateNPC();
 
 		if (getNpc == nullptr || getNpc.IsValid() == false)
@@ -52,8 +58,6 @@ void AServerActor::StartServer()
 
 		getNpc->ClearData();
 		getNpc->uniqId = GetUnitUniqId();
-		float x = FMath::RandRange(0, gameMode->mapWidth);
-		float y = FMath::RandRange(0, gameMode->mapWidth);
 		getNpc->SetPos(x, y, gameMode->GetHeight(x, y));
 		getNpc->rot = FMath::RandRange(0, 360);
 		getNpc->unitScale = 0.3;
@@ -488,6 +492,7 @@ void AServerActor::SendNPCMove(TSharedPtr<FNPCInfo> npcInfo)
 		packet->y = npcInfo->y;
 		packet->z = npcInfo->z;
 		packet->rot = npcInfo->rot;
+		packet->isMove = npcInfo->isMove;
 		RegAnsPacket(packet);
 	}
 }

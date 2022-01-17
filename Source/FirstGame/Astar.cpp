@@ -237,6 +237,12 @@ namespace pf
 		return (pos.x * m_dimensions.x) + pos.y;
 	}
 
+	bool AStar::CanPos(const float& x, const float& y)
+	{
+		return !isBlocked(convertTo1D(Vec2i(x / compressionSize, y / compressionSize)));
+	}
+
+
 	uint heuristic::manhattan(const Vec2i& v1, const Vec2i& v2, int weight)
 	{
 		const auto delta = Vec2i::getDelta(v1, v2);

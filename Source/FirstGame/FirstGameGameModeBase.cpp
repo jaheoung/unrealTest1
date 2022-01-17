@@ -40,6 +40,11 @@ AFirstGameGameModeBase::AFirstGameGameModeBase()
 
 	if (interactionAsset.Succeeded())
 		uiWidgetClassMap.Add(WIDGET_TYPE::INVENTORY, interactionAsset.Class);
+
+	auto camAsset = ConstructorHelpers::FClassFinder<AMyCamActor>(TEXT("Blueprint'/Game/MyResource/BP_MyCamActor.BP_MyCamActor_C'"));
+
+	if (camAsset.Succeeded())
+		characterCamClass = camAsset.Class;
 }
 
 void AFirstGameGameModeBase::StartPlay()
@@ -87,12 +92,13 @@ void AFirstGameGameModeBase::StartPlay()
 		return;
 	}
 
-	characterCam = world->SpawnActor<AMyCamActor>();
+	characterCam = Cast<AMyCamActor>(world->SpawnActor(characterCamClass));
 
 	if (characterCam != nullptr)
+	{
 		PlayerController->SetViewTarget(characterCam);
-
-	characterCam->EnableInput(PlayerController);
+		characterCam->EnableInput(PlayerController);
+	}
 	
 	serverActor = world->SpawnActor<AServerActor>();
 
@@ -179,7 +185,7 @@ float AFirstGameGameModeBase::GetHeight(float& x, float& y)
 	if (heightMapWidth == 0)
 		heightMapWidth = FMath::Sqrt(heightMapdatas.Num());
 
-	if (x < 0 || x > mapWidth || y < 0 || y > mapWidth)
+	if (x < 0 || x >= mapWidth || y < 0 || y >= mapWidth)
 		return 0;
 
 	if (heightMapRate <= 0)
@@ -402,7 +408,11 @@ void AFirstGameGameModeBase::NpcMove(TSharedPtr<FAnsNpcMovePacket> packet)
 	{
 		(*getNpc)->SetActorLocation(FVector(packet->x, packet->y, GetHeight(packet->x, packet->y)));
 		(*getNpc)->SetActorRotation(FRotator(0, packet->rot, 0));
-		(*getNpc)->SetAnim(NPC_STATE::RUN);
+		
+		if (packet->isMove)
+			(*getNpc)->SetAnim(NPC_STATE::RUN);
+		else
+			(*getNpc)->SetAnim(NPC_STATE::IDLE);
 	}
 }
 
