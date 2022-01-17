@@ -69,7 +69,7 @@ void AFirstGameGameModeBase::StartPlay()
 	if (isOnMapTool == true) // 맵툴이 실행되어 있다면.
 	{
 		PlayerController->isMapToolMode = true;
-		PlayerController->toolCompressionMapSize = mapSize;
+		PlayerController->compressionMapWidth = mapWidth;
 
 		toolCam = world->SpawnActor<AToolCameraActor>();
 		toolCam->Rename(TEXT("Tool_Camera"));
@@ -147,7 +147,7 @@ void AFirstGameGameModeBase::ReadHeightMap()
 
 	if (readFile.is_open())
 	{
-		readFile.read((char*)&mapSize, sizeof(int));
+		readFile.read((char*)&mapWidth, sizeof(int));
 
 		readFile.seekg(0, readFile.end);
 		size_t fileSize = readFile.tellg();
@@ -179,11 +179,11 @@ float AFirstGameGameModeBase::GetHeight(float& x, float& y)
 	if (heightMapWidth == 0)
 		heightMapWidth = FMath::Sqrt(heightMapdatas.Num());
 
-	if (x < 0 || x > mapSize || y < 0 || y > mapSize)
+	if (x < 0 || x > mapWidth || y < 0 || y > mapWidth)
 		return 0;
 
 	if (heightMapRate <= 0)
-		heightMapRate = heightMapWidth / (float)mapSize;
+		heightMapRate = heightMapWidth / (float)mapWidth;
 
 	int&&  index = heightMapWidth * (int)(heightMapRate * x) + (int)(heightMapRate * y); // x 가 top view 기준 위쪽이라.. 헷깔림.
 	// UE_LOG(LogTemp, Warning, TEXT("w : %d, x : %d, y : %d, rate : %f         getHeight : %f"), heightMapWidth, (int)(heightMapRate * x), (int)(heightMapRate * y), heightMapRate, heightMapdatas[index]);

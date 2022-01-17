@@ -16,6 +16,11 @@ AServerActor::AServerActor()
 
 void AServerActor::StartServer()
 {
+	UWorld* world = GetWorld();
+
+	if (world == nullptr)
+		return;
+	
 	myUnit = CreatePC();
 
 	astar = new pf::AStar();
@@ -36,9 +41,9 @@ void AServerActor::StartServer()
 		pcMap.Emplace(myUnit->uniqId, myUnit);
 	}
 
-	return;
+	float curTime = world->GetTimeSeconds();
 
-	for (int i = 0; i < 40; ++i)
+	for (int i = 0; i < 400; ++i)
 	{
 		TSharedPtr<FNPCInfo> getNpc = CreateNPC();
 
@@ -47,14 +52,16 @@ void AServerActor::StartServer()
 
 		getNpc->ClearData();
 		getNpc->uniqId = GetUnitUniqId();
-		float x = FMath::RandRange(0, gameMode->mapSize);
-		float y = FMath::RandRange(0, gameMode->mapSize);
+		float x = FMath::RandRange(0, gameMode->mapWidth);
+		float y = FMath::RandRange(0, gameMode->mapWidth);
 		getNpc->SetPos(x, y, gameMode->GetHeight(x, y));
 		getNpc->rot = FMath::RandRange(0, 360);
 		getNpc->unitScale = 0.3;
 		getNpc->hp = 300;
 		getNpc->maxHp = 300;
 		getNpc->isDie = false;
+		getNpc->moveDelayGap = FMath::RandRange(2, 12);
+		getNpc->GetDelayMove(curTime); // 갱신.
 		npcMap.Emplace(getNpc->uniqId, getNpc);
 	}
 
@@ -67,8 +74,8 @@ void AServerActor::StartServer()
 
 		getInteractionObj->ClearData();
 		getInteractionObj->uniqId = GetUnitUniqId();
-		getInteractionObj->x = FMath::RandRange(0, gameMode->mapSize);
-		getInteractionObj->y = FMath::RandRange(0, gameMode->mapSize);
+		getInteractionObj->x = FMath::RandRange(0, gameMode->mapWidth);
+		getInteractionObj->y = FMath::RandRange(0, gameMode->mapWidth);
 		getInteractionObj->rot = FMath::RandRange(0, 360);
 		interactionMap.Emplace(getInteractionObj->uniqId, getInteractionObj);
 	}
@@ -171,6 +178,13 @@ void AServerActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UWorld* world = GetWorld();
+
+	if (world == nullptr)
+		return;
+
+	float curTime = world->GetTimeSeconds();
+
 	for (const auto& entry:pcMap)
 	{
 		TSharedPtr<FPCInfo> pcInfo = entry.Value;
@@ -217,7 +231,7 @@ void AServerActor::Tick(float DeltaTime)
 			}
 			
 			// 이동 처리.
-			if (npcInfo->curPathIndex == 0)
+			if (npcInfo->curPathIndex == 0 && npcInfo->GetDelayMove(curTime))
 			{
 				npcInfo->SetMove(FVector(FMath::RandRange(0, 5000), FMath::RandRange(0, 5000), 0), GetWorld(), astar);
 			}

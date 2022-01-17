@@ -9,8 +9,6 @@
 #include "Astar.h"
 #include "GameFramework/Actor.h"
 #include "Weapon.h"
-#include "NavigationSystem.h"
-#include "NavigationPath.h"
 #include "ServerActor.generated.h"
 
 
@@ -63,6 +61,10 @@ struct FUnitInfo
 	float maxHp;
 	bool isDie;
 
+	// 최소 이 시간 이후에 다시 길찾기를 한다.
+	float moveDelayGap;
+	float checkMoveDelay;
+
 	///------ 이하 이동 관련.
 	// z 는 고려하지 않는다.
 	FVector curPos;
@@ -70,8 +72,9 @@ struct FUnitInfo
 	int curPathIndex;
 	FVector lastTargetPoint;
 	float moveSpeed = 0.9f;
-	class UNavigationSystemV1* navSys;
 	FVector lastDirNoNormal;
+
+	virtual ~FUnitInfo(){}
 
 	// 현재위치 x,y,z 는 반영하지만 반환되는 방향은 x,y 로만 계산된다. (pc 는 z 값을 사용하지 않는다.)
 	const FVector& SetPos(float _x, float _y, float _z)
@@ -113,10 +116,11 @@ struct FUnitInfo
 		lastTargetPoint.X = 0;
 		lastTargetPoint.Y = 0;
 		lastTargetPoint.Z = 0;
-		navSys = nullptr;
 		hp = 0;
 		maxHp = 0;
 		isDie = false;
+		moveDelayGap = 0;
+		checkMoveDelay = 0;
 	}
 
 	void StopMovePath()
@@ -125,6 +129,17 @@ struct FUnitInfo
 		lastTargetPoint.Y = 0;
 		lastTargetPoint.Z = 0;
 		curPathIndex = 0;
+	}
+
+	// 이 값이 true 이면 다시 SetMove 할 수 있다.
+	bool GetDelayMove(const float& curTime)
+	{
+		if (checkMoveDelay > curTime)
+			return false;
+
+		checkMoveDelay = moveDelayGap + curTime;
+
+		return true;
 	}
 
 	void SetMove(FVector targetPos, UWorld* world, pf::AStar* astar)
@@ -137,15 +152,7 @@ struct FUnitInfo
 
 		lastTargetPoint = targetPos;
 
-		if (navSys == nullptr)
-			navSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(world);
-
-		if (navSys == nullptr)
-			return;
-
-		//UNavigationPath* path = navSys->FindPathToLocationSynchronously(world, curPos, targetPos, NULL);
-
-		auto path = astar->findPath(pf::Vec2i(curPos.X, curPos.Y), pf::Vec2i(targetPos.X, targetPos.Y), pf::heuristic::manhattan, 10);
+		auto path = astar->findPath(pf::Vec2i(curPos.X, curPos.Y), pf::Vec2i(targetPos.X, targetPos.Y), pf::heuristic::manhattan, 100);
 
 		int pathCount = path.size();
 
@@ -337,6 +344,8 @@ enum class PACKET_RET
 
 struct FAskPacket
 {
+	virtual ~FAskPacket(){}
+	
 	virtual PACKET_TYPE GetPacketType()
 	{
 		return PACKET_TYPE::NONE;
@@ -350,6 +359,8 @@ struct FAskPacket
 struct FAnsPacket
 {
 	PACKET_RET ret;
+
+	virtual ~FAnsPacket(){}
 	
 	virtual PACKET_TYPE GetPacketType()
 	{

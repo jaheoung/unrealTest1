@@ -35,7 +35,7 @@ public:
 	AServerActor*serverActor;
 
 	TArray<float> heightMapdatas;
-	int mapSize = 18900; // 내 맵 기본 사이즈.
+	int mapWidth = 18900; // 내 맵 기본 사이즈.
 	int heightMapWidth = 0;
 	float heightMapRate = 0.0;
 	float GetHeight(float& x, float&y);

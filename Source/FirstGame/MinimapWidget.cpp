@@ -33,7 +33,7 @@ void UMinimapWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	UWorld* world = GetWorld();
 	AFirstGameGameModeBase* gameMode = world->GetAuthGameMode<AFirstGameGameModeBase>();
 
-	if (gameMode == nullptr || gameMode->mapSize <= 0.0 || gameMode->myUnit == nullptr)
+	if (gameMode == nullptr || gameMode->mapWidth <= 0.0 || gameMode->myUnit == nullptr)
 		return;
 
 	if (isInit == false)
@@ -47,7 +47,7 @@ void UMinimapWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 			imageW = mapImage->GetDesiredSize().X;
 			imageH = mapImage->GetDesiredSize().Y;
-			imgRate = imageW / gameMode->mapSize;
+			imgRate = imageW / gameMode->mapWidth;
 
 			FVector2D myIconSize = myUnitIcon->GetDesiredSize();
 			myUnitIcon->SetRenderTranslation(FVector2D(halfClippingW - myIconSize.X * 0.5, halfClippingH - myIconSize.Y * 0.5));

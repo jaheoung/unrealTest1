@@ -16,9 +16,11 @@ class NEWMAPTOOL_API UMapToolWidget : public UEditorUtilityWidget
 
 public:
 	// 맵 크기 (정사각형)
-	int mapSize = 18900;
+	int mapWidth = 18900;
 	// 이 간격으로 맵 크기만큼 읽어서 처리.
 	int mapCheckGap = 10;
+
+	int pathGridRange = 1;
 	
 	UPROPERTY(meta=(BindWidget))
 	class UEditableText* mapSizeInputText;
@@ -32,6 +34,11 @@ public:
 	class UButton* pathGridSaveButton;
 	UPROPERTY(meta=(BindWidget))
 	class UButton* pathGridLoadButton;
+	UPROPERTY(meta=(BindWidget))
+	class UEditableText* pathGridRangeText;
+	UPROPERTY(meta=(BindWidget))
+	class UButton* pathGridRangeButton;
+	
 
 	virtual void NativeConstruct() override;
 
@@ -47,6 +54,8 @@ public:
 	void ChangeMapSize(const FText& txt);
 	UFUNCTION()
 	void ChangeMapCheckGap(const FText& txt);
+	UFUNCTION()
+	void PathGridRangeClick();
 
 	void SetMapToolOnOff(bool&& isOn);
 

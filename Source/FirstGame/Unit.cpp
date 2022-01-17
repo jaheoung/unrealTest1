@@ -6,8 +6,6 @@
 #include "Astar.h"
 #include "FirstGameGameModeBase.h"
 #include "InteractionActor.h"
-#include "NavigationSystem.h"
-#include "NavigationPath.h"
 #include "Vec2i.h"
 
 // Sets default values
@@ -36,14 +34,7 @@ void AUnit::SetMove(FVector targetPos)
 		return;
 
 	lastTargetPoint = targetPos;
-
-	if (navSys == nullptr)
-		navSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
-
-	if (navSys == nullptr)
-		return;
 	
-	//UNavigationPath* path = navSys->FindPathToLocationSynchronously(GetWorld(), GetActorLocation(), targetPos, NULL);
 	UWorld* world = GetWorld();
 
 	AFirstGameGameModeBase* gameMode = world->GetAuthGameMode<AFirstGameGameModeBase>();
@@ -51,7 +42,7 @@ void AUnit::SetMove(FVector targetPos)
 
 	FVector curPos = GetActorLocation();
 
-	auto path = astar->findPath(pf::Vec2i(curPos.X, curPos.Y), pf::Vec2i(8150, 5840), pf::heuristic::manhattan, 100);
+	auto path = astar->findPath(pf::Vec2i(curPos.X, curPos.Y), pf::Vec2i(8150, 5840), pf::heuristic::manhattan, 200);
 
 	int pathCount = path.size();
 

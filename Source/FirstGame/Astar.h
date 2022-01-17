@@ -24,6 +24,17 @@ namespace pf
 		uint f;
 		uint g;
 		uint h;
+
+		void Clear()
+		{
+			pos.x = 0;
+			pos.y = 0;
+			parent.x = 0;
+			parent.y = 0;
+			f = 0;
+			g = 0;
+			h = 0;
+		}
 	};
 
 	// Reverse std::priority_queue to get the smallest element on top

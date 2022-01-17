@@ -18,8 +18,9 @@ void UMapToolWidget::NativeConstruct()
 
 	bAlwaysReregisterWithWindowsMenu = true;
 	
-	mapSizeInputText->SetText(FText::AsNumber(mapSize));
+	mapSizeInputText->SetText(FText::AsNumber(mapWidth));
 	mapGapInputText->SetText(FText::AsNumber(mapCheckGap));
+	pathGridRangeText->SetText(FText::AsNumber(pathGridRange));
 
 	mapSizeInputText->OnTextChanged.AddDynamic(this, &UMapToolWidget::ChangeMapSize);
 	mapGapInputText->OnTextChanged.AddDynamic(this, &UMapToolWidget::ChangeMapCheckGap);
@@ -28,6 +29,7 @@ void UMapToolWidget::NativeConstruct()
 	heightMapSaveButton->OnClicked.AddDynamic(this, &UMapToolWidget::HeightMapSaveClick);
 	pathGridSaveButton->OnClicked.AddDynamic(this, &UMapToolWidget::PathGridSaveClick);
 	pathGridLoadButton->OnClicked.AddDynamic(this, &UMapToolWidget::PathGridLoadClick);
+	pathGridRangeButton->OnClicked.AddDynamic(this, &UMapToolWidget::PathGridRangeClick);
 
 	SetMapToolOnOff(true);
 }
@@ -46,7 +48,7 @@ void UMapToolWidget::ImageSaveClick()
 	// 기록할 최대 높이값.
 	float maxHeight = 5500;
 	float rate = 255 / maxHeight;
-	int count = mapSize / mapCheckGap;
+	int count = mapWidth / mapCheckGap;
 	
 	std::string str;
 	str.append("P2 ");
@@ -57,10 +59,10 @@ void UMapToolWidget::ImageSaveClick()
 	imgFile.write(str.data(), str.size());
 	str.clear();
 	
-	for (int x = mapSize - 1; x > -1; x -= mapCheckGap) // top 뷰에서 바라봤을때 x 가 위쪽 y 가 오른쪽으로 전개된다.
+	for (int x = mapWidth - 1; x > -1; x -= mapCheckGap) // top 뷰에서 바라봤을때 x 가 위쪽 y 가 오른쪽으로 전개된다.
 		{
 		startPoint.X = x;
-		for (int y = 0; y < mapSize; y += mapCheckGap)
+		for (int y = 0; y < mapWidth; y += mapCheckGap)
 		{
 			startPoint.Y = y;	
 			if (GEditor->PlayWorld->LineTraceSingleByChannel(hitResult, startPoint, startPoint + downVec, ECollisionChannel::ECC_Visibility,
@@ -86,7 +88,7 @@ void UMapToolWidget::ImageSaveClick()
 
 void UMapToolWidget::HeightMapSaveClick()
 {
-	if ((mapSize % mapCheckGap) > 0)
+	if ((mapWidth % mapCheckGap) > 0)
 	{
 		// 마지막 인자 알림 텍스트를 실패 텍스트로 바꾸면 빌드 실패한다 -_-;;
 		GEditor->OnModalMessageDialog(EAppMsgType::Ok, FText::FromString(TEXT("맵 크기를 간격으로 나눴을때 나머지가 없어야 합니다.")), FText::FromString(TEXT("알림")));
@@ -102,14 +104,14 @@ void UMapToolWidget::HeightMapSaveClick()
 	hpath.Append(TEXT("heightMap.bin"));
 	std::ofstream heightFile(*hpath, std::ios::out | std::ios::binary);
 
-	heightFile.write((char*)&mapSize, sizeof(int));
+	heightFile.write((char*)&mapWidth, sizeof(int));
 		
 	TArray<float> mdata;
 	startPoint.X = startPoint.Y = 0;
-	for (int x = 0; x < mapSize; x += mapCheckGap) // top뷰 기준 위쪽 방향.
+	for (int x = 0; x < mapWidth; x += mapCheckGap) // top뷰 기준 위쪽 방향.
 	{
 		startPoint.X = x;
-		for (int y = 0; y < mapSize; y += mapCheckGap) // top뷰 기준 오른쪽 방향.
+		for (int y = 0; y < mapWidth; y += mapCheckGap) // top뷰 기준 오른쪽 방향.
 		{
 			startPoint.Y = y;	
 			if (GEditor->PlayWorld->LineTraceSingleByChannel(hitResult, startPoint, startPoint + downVec, ECollisionChannel::ECC_Visibility,
@@ -210,15 +212,22 @@ void UMapToolWidget::PathGridLoadClick()
 
 void UMapToolWidget::ChangeMapSize(const FText& txt)
 {
-	int&& getInt = FCString::Atoi(*txt.ToString());
-	mapSize = getInt;
+	int&& getInt = std::stoi(*txt.ToString());
+	mapWidth = getInt;
 }
 
 void UMapToolWidget::ChangeMapCheckGap(const FText& txt)
 {
-	int&& getInt = FCString::Atoi(*txt.ToString());
+	int&& getInt = std::stoi(*txt.ToString());
 	mapCheckGap = getInt;
 }
+
+void UMapToolWidget::PathGridRangeClick()
+{
+	AMyPlayerController* PlayerController = Cast<AMyPlayerController>(GEditor->PlayWorld->GetFirstPlayerController());
+	PlayerController->toolSelectRange = std::stoi(*(pathGridRangeText->GetText().ToString()));
+}
+
 
 void UMapToolWidget::SetMapToolOnOff(bool&& isOn)
 {

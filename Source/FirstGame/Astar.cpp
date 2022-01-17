@@ -21,6 +21,7 @@ namespace pf
 						 { -1, -1 }, { 1, 1 }, { 1, -1 }, { -1, 1 } };
 	}
 
+	// 압축 그리드를 사용하고 있기 때문에 예를들어 직선상의 목적지를 찾더라도 직선이 아닌 살짝 압축된 크기만큼 돌아갈 수 있다.
 	std::vector<Vec2i> AStar::findPath(const Vec2i& startPos, const Vec2i& targetPos, HeuristicFunction heuristicFunc, int weight)
 	{
 		m_startPos = startPos;
@@ -34,11 +35,25 @@ namespace pf
 		
 		m_weight = weight;
 		m_heuristic = std::bind(heuristicFunc, _1, _2, _3);
-		m_cameFrom.resize(m_size);
-		m_closedList.resize(m_size, false);
 
-		std::fill(m_cameFrom.begin(), m_cameFrom.end(), Node());
-		std::fill(m_closedList.begin(), m_closedList.end(), false);
+		if (m_cameFrom.size() != m_size)
+			m_cameFrom.resize(m_size);
+
+		if (m_closedList.size() != m_size)
+			m_closedList.resize(m_size);
+
+		for (auto& elem : m_cameFrom)
+		{
+			elem.Clear();
+		}
+
+		for (int i = 0, k = m_closedList.size(); i < k; ++i)
+		{
+			m_closedList[i] = false;
+		}
+		
+		std::priority_queue<Node> reset;
+		std::swap(m_openList, reset);
 
 		m_cameFrom[convertTo1D(m_startPos)].parent = m_startPos;
 		m_openList.push(Node(m_startPos, 0));
@@ -77,6 +92,8 @@ namespace pf
 				gNew = m_cameFrom[convertTo1D(currentPos)].g + 1;
 				hNew = m_heuristic(neighborPos, m_targetPos, m_weight);
 				fNew = gNew + hNew;
+
+				//UE_LOG(LogTemp, Warning, TEXT("g : %d, h : %d, f : %d"), gNew, hNew, fNew);
 
 				if (m_cameFrom[neighborIndex].f == 0 || fNew < m_cameFrom[neighborIndex].f)
 				{

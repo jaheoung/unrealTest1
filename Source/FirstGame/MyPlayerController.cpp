@@ -36,7 +36,7 @@ void AMyPlayerController::RightClickAxis(float amount)
 		if (outHit.bBlockingHit)
 		{
 			FVector pos = outHit.Location;
-			SetToolMesh(pos.X, pos.Y, false);
+			SetToolMesh(pos.X, pos.Y, false, toolSelectRange);
 		}
 	}
 }
@@ -65,24 +65,43 @@ void AMyPlayerController::LeftClickAxis(float amount)
 		if (outHit.bBlockingHit)
 		{
 			FVector pos = outHit.Location;
-			SetToolMesh(pos.X, pos.Y, true);
+			SetToolMesh(pos.X, pos.Y, true, toolSelectRange);
 		}
 	}
 }
 
-void AMyPlayerController::SetToolMesh(const float& _x, const float& _y, bool&& isSelect)
+void AMyPlayerController::SetToolMesh(const float& _x, const float& _y, bool isSelect, const int& range)
 {
+	if (range > 0)
+	{
+		float tempX = _x;
+		float tempY = _y;
+		float rangeGap = range * toolMapGap;
+
+		for (int i = tempX + rangeGap, k = tempX - rangeGap; i >= k; i -= toolMapGap)
+		{
+			for (int q = tempY - rangeGap, w = tempY + rangeGap; q <= w; q += toolMapGap)
+			{
+				SetToolMesh(i, q, isSelect, 0);
+			}
+		}
+	}
+
 	int x = _x / toolMapGap; // 기본은 한칸이 300.
 	int y = _y / toolMapGap;
-	int index = x * toolCompressionMapSize + y;
+
+	if (x < 0 || x >= compressionMapWidth || y < 0 || y >= compressionMapWidth)
+		return;
+	
+	int index = x * compressionMapWidth + y;
 
 	// 변경된 경우에만.
 	if ((isSelect && !toolMeshActor->xysByIndex[index]) ||
 		(!isSelect && toolMeshActor->xysByIndex[index])) // xysByIndex 는 toolMapGap 만큼 압축됨. 
 	{
 		// 그리기 위한 좌표 변환.
-		x = index / toolCompressionMapSize;
-		y = index % toolCompressionMapSize;
+		x = index / compressionMapWidth;
+		y = index % compressionMapWidth;
 		x = x * toolMapGap;
 		y = y * toolMapGap;
 
@@ -111,7 +130,7 @@ void AMyPlayerController::InitToolMeshActor(bool needMeshEmpty)
 	if (toolMeshActor == nullptr) // 초기화.
 	{
 		AFirstGameGameModeBase* gameMode = world->GetAuthGameMode<AFirstGameGameModeBase>();
-		toolCompressionMapSize = (int)(gameMode->mapSize / (float)toolMapGap); // 한칸이 300*300 사이즈를 갖는다.
+		compressionMapWidth = (int)(gameMode->mapWidth / (float)toolMapGap); // 한칸이 300*300 사이즈를 갖는다.
 			
 		toolMeshActor = world->SpawnActor<AToolMeshActor>();
 		toolMeshActor->SetActorLocation(FVector(0, 0, 2000));
@@ -119,7 +138,7 @@ void AMyPlayerController::InitToolMeshActor(bool needMeshEmpty)
 		if (needMeshEmpty)
 			toolMeshActor->xysByIndex.Empty();
 		else
-			toolMeshActor->xysByIndex.Init(false, toolCompressionMapSize * toolCompressionMapSize);
+			toolMeshActor->xysByIndex.Init(false, compressionMapWidth * compressionMapWidth);
 	}
 }
 
