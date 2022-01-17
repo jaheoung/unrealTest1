@@ -6,8 +6,8 @@
 
 void UHUDWidget::NativeConstruct()
 {
-	if (inventoryBtn != nullptr)
-		inventoryBtn->OnClicked.AddDynamic(this, &UHUDWidget::InventoryButtonClick);
+	inventoryBtn->OnClicked.AddDynamic(this, &UHUDWidget::InventoryButtonClick);
+	optionBtn->OnClicked.AddDynamic(this, &UHUDWidget::OptionButtonClick);
 }
 
 void UHUDWidget::InventoryButtonClick()
@@ -15,6 +15,13 @@ void UHUDWidget::InventoryButtonClick()
 	AFirstGameGameModeBase* gameMode = GetWorld()->GetAuthGameMode<AFirstGameGameModeBase>();
 	gameMode->OpenWidget(WIDGET_TYPE::INVENTORY);
 }
+
+void UHUDWidget::OptionButtonClick()
+{
+	AFirstGameGameModeBase* gameMode = GetWorld()->GetAuthGameMode<AFirstGameGameModeBase>();
+	gameMode->OpenWidget(WIDGET_TYPE::OPTION);
+}
+
 
 
 

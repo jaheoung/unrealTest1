@@ -18,9 +18,13 @@ class FIRSTGAME_API UHUDWidget : public UMyBaseWidget
 public:
 	UPROPERTY(meta=(BindWidget))
 	class UButton* inventoryBtn;
+	UPROPERTY(meta=(BindWidget))
+	class UButton* optionBtn;
 
 	virtual void NativeConstruct() override;
 	
 	UFUNCTION()
 	void InventoryButtonClick();
+	UFUNCTION()
+	void OptionButtonClick();
 };

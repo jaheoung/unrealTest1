@@ -15,6 +15,7 @@
 #include "HUDWidget.h"
 #include "InteractionActor.h"
 #include "InventoryWidget.h"
+#include "MainWidget.h"
 #include "MyCamActor.h"
 #include "MyUnit.h"
 #include "MyNpc.h"
@@ -22,6 +23,7 @@
 #include "Weapon.h"
 #include "ServerActor.h"
 #include "ToolMeshActor.h"
+#include "Blueprint/WidgetTree.h"
 #include "Camera/CameraComponent.h"
 #include "Commandlets/GatherTextCommandlet.h"
 #include "Components/WidgetComponent.h"
@@ -30,22 +32,30 @@
 AFirstGameGameModeBase::AFirstGameGameModeBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	
-	auto hudAsset = ConstructorHelpers::FClassFinder<UUserWidget>(TEXT("WidgetBlueprint'/Game/MyResource/BP_HUD.BP_HUD_C'"));
-
-	if (hudAsset.Succeeded())
-		uiWidgetClassMap.Add(WIDGET_TYPE::HUD, hudAsset.Class);
-	
-	auto interactionAsset = ConstructorHelpers::FClassFinder<UUserWidget>(TEXT("WidgetBlueprint'/Game/MyResource/BP_Inventory.BP_Inventory_C'"));
-
-	if (interactionAsset.Succeeded())
-		uiWidgetClassMap.Add(WIDGET_TYPE::INVENTORY, interactionAsset.Class);
 
 	auto camAsset = ConstructorHelpers::FClassFinder<AMyCamActor>(TEXT("Blueprint'/Game/MyResource/BP_MyCamActor.BP_MyCamActor_C'"));
 
 	if (camAsset.Succeeded())
 		characterCamClass = camAsset.Class;
+
+	auto mainWidgetAsset = ConstructorHelpers::FClassFinder<UMainWidget>(TEXT("WidgetBlueprint'/Game/MyResource/BP_MainWidget.BP_MainWidget_C'"));
+
+	if (mainWidgetAsset.Succeeded())
+		mainWidgetClass = mainWidgetAsset.Class;
+
+	AddUIWidgetClass(WIDGET_TYPE::HUD, TEXT("WidgetBlueprint'/Game/MyResource/BP_HUD.BP_HUD_C'"));
+	AddUIWidgetClass(WIDGET_TYPE::INVENTORY, TEXT("WidgetBlueprint'/Game/MyResource/BP_Inventory.BP_Inventory_C'"));
+	AddUIWidgetClass(WIDGET_TYPE::OPTION, TEXT("WidgetBlueprint'/Game/MyResource/BP_Option.BP_Option_C'"));
 }
+
+void AFirstGameGameModeBase::AddUIWidgetClass(WIDGET_TYPE type, const TCHAR* path)
+{
+	auto asset = ConstructorHelpers::FClassFinder<UUserWidget>(path);
+
+	if (asset.Succeeded())
+		uiWidgetClassMap.Add(type, asset.Class);
+}
+
 
 void AFirstGameGameModeBase::StartPlay()
 {
@@ -107,7 +117,15 @@ void AFirstGameGameModeBase::StartPlay()
 		serverActor->ansDelegate.BindUObject(this, &AFirstGameGameModeBase::AnsCallback);
 	}
 
-	// hud 붙임.
+	// 메인 위젯 붙임.
+	UUserWidget* newMainWidget = CreateWidget(world, mainWidgetClass);
+
+	if (newMainWidget != nullptr)
+	{
+		mainWidget = Cast<UMainWidget>(newMainWidget);
+		mainWidget->AddToViewport();
+	}
+	
 	OpenWidget(WIDGET_TYPE::HUD);
 
 	serverActor->StartServer();
@@ -200,11 +218,14 @@ float AFirstGameGameModeBase::GetHeight(float& x, float& y)
 
 void AFirstGameGameModeBase::OpenWidget(WIDGET_TYPE type)
 {
+	if (mainWidget == nullptr)
+		return;
+	
 	UUserWidget** getWidget = uiWidgetMap.Find(type);
 
 	if (getWidget == nullptr)
 	{
-		auto newWidget = CreateWidget(GetWorld(), *uiWidgetClassMap[type]);
+		UUserWidget* newWidget = CreateWidget(GetWorld(), *uiWidgetClassMap[type]);
 
 		if (newWidget != nullptr)
 		{
@@ -217,7 +238,7 @@ void AFirstGameGameModeBase::OpenWidget(WIDGET_TYPE type)
 			}
 			
 			uiWidgetMap.Emplace(type, newWidget);
-			newWidget->AddToViewport();
+			mainWidget->AddChild(newWidget);
 		}
 	}
 	else
@@ -227,7 +248,10 @@ void AFirstGameGameModeBase::OpenWidget(WIDGET_TYPE type)
 		UMyBaseWidget* getBaseWidget = Cast<UMyBaseWidget>(*getWidget);
 
 		if (getBaseWidget != nullptr)
+		{
 			getBaseWidget->Open();
+			mainWidget->TopWidget(getBaseWidget);
+		}
 	}
 }
 

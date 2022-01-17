@@ -12,12 +12,14 @@ class AMyNpc;
 class AMyCamActor;
 class AToolCameraActor;
 class AServerActor;
+class UMainWidget;
 
 UENUM()
 enum class WIDGET_TYPE
 {
 	HUD = 0,
 	INVENTORY,
+	OPTION,
 };
 
 /**
@@ -31,6 +33,8 @@ class FIRSTGAME_API AFirstGameGameModeBase : public AGameModeBase
 public:
 
 	AFirstGameGameModeBase();
+
+	void AddUIWidgetClass(WIDGET_TYPE type, const TCHAR* path);
 	
 	AServerActor*serverActor;
 
@@ -52,6 +56,9 @@ public:
 	TArray<TSharedPtr<FMyItemInfo>> myItems;
 	TQueue<TSharedPtr<FMyItemInfo>> myItemPool;
 
+	TSubclassOf<UMainWidget> mainWidgetClass;
+	UMainWidget* mainWidget;
+	
 	TMap<WIDGET_TYPE, TSubclassOf<UUserWidget>> uiWidgetClassMap;
 	TMap<WIDGET_TYPE, UUserWidget*> uiWidgetMap;
 	
