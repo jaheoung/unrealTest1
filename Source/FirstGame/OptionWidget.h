@@ -17,6 +17,10 @@ class FIRSTGAME_API UOptionWidget : public UMyBaseWidget
 public:
 	UPROPERTY(meta=(BindWidget))
 	class UButton* closeBtn;
+	UPROPERTY(meta=(BindWidget))
+	class UImage* testImage;
+	UPROPERTY(meta=(BindWidget))
+	class UImage* testImage2;
 
 	UFUNCTION()
 	virtual void NativeConstruct() override;

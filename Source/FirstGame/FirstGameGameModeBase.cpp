@@ -20,6 +20,7 @@
 #include "MyUnit.h"
 #include "MyNpc.h"
 #include "MyPlayerController.h"
+#include "OptionWidget.h"
 #include "Weapon.h"
 #include "ServerActor.h"
 #include "ToolMeshActor.h"
@@ -27,6 +28,7 @@
 #include "Camera/CameraComponent.h"
 #include "Commandlets/GatherTextCommandlet.h"
 #include "Components/WidgetComponent.h"
+#include "Engine/AssetManager.h"
 #include "Kismet/GameplayStatics.h"
 
 AFirstGameGameModeBase::AFirstGameGameModeBase()
@@ -43,9 +45,9 @@ AFirstGameGameModeBase::AFirstGameGameModeBase()
 	if (mainWidgetAsset.Succeeded())
 		mainWidgetClass = mainWidgetAsset.Class;
 
-	AddUIWidgetClass(WIDGET_TYPE::HUD, TEXT("WidgetBlueprint'/Game/MyResource/BP_HUD.BP_HUD_C'"));
-	AddUIWidgetClass(WIDGET_TYPE::INVENTORY, TEXT("WidgetBlueprint'/Game/MyResource/BP_Inventory.BP_Inventory_C'"));
-	AddUIWidgetClass(WIDGET_TYPE::OPTION, TEXT("WidgetBlueprint'/Game/MyResource/BP_Option.BP_Option_C'"));
+	// AddUIWidgetClass(WIDGET_TYPE::HUD, TEXT("WidgetBlueprint'/Game/MyResource/BP_HUD.BP_HUD_C'"));
+	// AddUIWidgetClass(WIDGET_TYPE::INVENTORY, TEXT("WidgetBlueprint'/Game/MyResource/BP_Inventory.BP_Inventory_C'"));
+	// AddUIWidgetClass(WIDGET_TYPE::OPTION, TEXT("WidgetBlueprint'/Game/MyResource/BP_Option.BP_Option_C'"));
 }
 
 void AFirstGameGameModeBase::AddUIWidgetClass(WIDGET_TYPE type, const TCHAR* path)
@@ -60,6 +62,31 @@ void AFirstGameGameModeBase::AddUIWidgetClass(WIDGET_TYPE type, const TCHAR* pat
 void AFirstGameGameModeBase::StartPlay()
 {
 	Super::StartPlay();
+
+	// 런타임 로드. // 항상 로드되어야 하는거면. ConstructorHelpers 로 로드가 이점이 있을까? 아님 동적이 이점이 있을까..
+	TArray<FSoftObjectPath> uiPaths;
+	uiPaths.AddUnique(FString(TEXT("WidgetBlueprint'/Game/MyResource/BP_HUD.BP_HUD_C'")));
+	uiPaths.AddUnique(FString(TEXT("WidgetBlueprint'/Game/MyResource/BP_Inventory.BP_Inventory_C'")));
+	uiPaths.AddUnique(FString(TEXT("WidgetBlueprint'/Game/MyResource/BP_Option.BP_Option_C'")));
+
+	TSharedPtr<FStreamableHandle> handle = UAssetManager::GetStreamableManager().RequestSyncLoad(uiPaths);
+	if (handle != nullptr && handle.IsValid())
+	{
+		TArray<UObject*> assets;
+		handle->GetLoadedAssets(assets);
+
+		for (auto elem : assets)
+		{
+			UClass* getClass = Cast<UClass>(elem); // 블루프린트 클래스.
+
+			if (getClass->IsChildOf(UHUDWidget::StaticClass()))
+				uiWidgetClassMap.Add(WIDGET_TYPE::HUD, getClass);
+			else if (getClass->IsChildOf(UInventoryWidget::StaticClass()))
+				uiWidgetClassMap.Add(WIDGET_TYPE::INVENTORY, getClass);
+			else if (getClass->IsChildOf(UOptionWidget::StaticClass()))
+				uiWidgetClassMap.Add(WIDGET_TYPE::OPTION, getClass);
+		}
+	}
 
 	UWorld* world = GetWorld();
 
