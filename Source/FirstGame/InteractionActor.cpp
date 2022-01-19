@@ -56,7 +56,9 @@ void AInteractionActor::BeginPlay()
 	UInteractionWidget* widget = Cast<UInteractionWidget>(interactionWidgetComp->GetWidget());
 
 	if (widget != nullptr)
+	{
 		widget->interactionBtn->OnClicked.AddDynamic(this, &AInteractionActor::InteractionButtonClick);
+	}
 }
 
 // Called every frame

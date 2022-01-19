@@ -49,6 +49,9 @@ public:
 	void ReadToolSetting();
 
 	void AnsCallback(const TSharedPtr<FAnsPacket> packet);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<class UMatineeCameraShake> shake;
 	
 	UPROPERTY(BlueprintReadWrite)
 		AMyUnit* myUnit;
@@ -86,7 +89,10 @@ public:
 
 	void ZoomIn();
 	void ZoomOut();
+	void JoyUpDown(float amount);
+	void JoyLeftRight(float amount);
 	void TestButton();
+	void CamShake();
 
 	void OpenWidget(WIDGET_TYPE type);
 	void CloseWidget(WIDGET_TYPE type);

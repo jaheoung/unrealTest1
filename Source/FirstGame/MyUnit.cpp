@@ -173,6 +173,8 @@ void AMyUnit::DefaultSkill()
 			gameMode->serverActor->RegAskPacket(packet);
 		}
 	}
+
+	gameMode->CamShake();
 }
 
 void AMyUnit::EvationSkill()

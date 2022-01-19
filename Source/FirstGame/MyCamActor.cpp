@@ -3,6 +3,8 @@
 
 #include "MyCamActor.h"
 
+#include "Kismet/KismetMathLibrary.h"
+
 // Sets default values
 AMyCamActor::AMyCamActor()
 {
@@ -16,20 +18,26 @@ void AMyCamActor::SetChaseTarget(AActor* unit, FVector posOffset, FVector rotOff
 	if (unit == nullptr)
 		return;
 
-	baseCamPosOffset = posOffset;
+	baseCamPosNormalOffset = posOffset.GetSafeNormal();
 	camRotOffset = rotOffset;
 	hasChaseTarget = true;
 	chaseTarget = unit;
 	zoomDistance = _zoomDistance;
 
-	FRotator rot = GetActorRotation();
-	rot.Pitch = camRotOffset.Y;
-	rot.Roll = camRotOffset.X;
-	rot.Yaw = camRotOffset.Z;
-	SetActorRotation(rot);
-
 	UpdateZoom();
 }
+
+void AMyCamActor::SetPosOffset(const bool& isUp, const float& amount)
+{
+	if (isUp)
+		baseCamPosNormalOffset += GetActorUpVector() * amount;
+	else
+		baseCamPosNormalOffset += GetActorRightVector() * amount;
+	
+	baseCamPosNormalOffset = baseCamPosNormalOffset.GetSafeNormal();
+	UpdateZoom();
+}
+
 
 void AMyCamActor::SetZoom(float plusZoom)
 {
@@ -38,7 +46,7 @@ void AMyCamActor::SetZoom(float plusZoom)
 
 void AMyCamActor::UpdateZoom()
 {
-	camPosOffset = baseCamPosOffset + (baseCamPosOffset.GetSafeNormal() * zoomDistance);
+	camPosOffset = baseCamPosNormalOffset * zoomDistance;
 }
 
 // Called when the game starts or when spawned
@@ -57,11 +65,12 @@ void AMyCamActor::Tick(float DeltaTime)
 
 	if (chaseTarget == nullptr)
 		return;
-
+	
 	FVector targetPos = chaseTarget->GetActorLocation();
-	FVector resultPos = targetPos - (targetPos.ForwardVector * camPosOffset.X);
-	resultPos += targetPos.LeftVector * camPosOffset.Y;
-	resultPos += targetPos.UpVector * camPosOffset.Z;
+	FVector resultPos = targetPos + camPosOffset;
 	SetActorLocation(resultPos);
+	
+	targetPos += camRotOffset;
+	SetActorRotation(UKismetMathLibrary::FindLookAtRotation(resultPos, targetPos));
 }
 

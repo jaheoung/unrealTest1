@@ -30,6 +30,7 @@
 #include "Components/WidgetComponent.h"
 #include "Engine/AssetManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "MatineeCameraShake.h"
 
 AFirstGameGameModeBase::AFirstGameGameModeBase()
 {
@@ -329,9 +330,44 @@ void AFirstGameGameModeBase::ZoomOut()
 	characterCam->UpdateZoom();
 }
 
+void AFirstGameGameModeBase::JoyUpDown(float amount)
+{
+	if (amount == 0.0)
+		return;
+	
+	if (characterCam == nullptr)
+		return;
+
+	characterCam->SetPosOffset(true, amount * 0.01);
+}
+
+void AFirstGameGameModeBase::JoyLeftRight(float amount)
+{
+	if (amount == 0.0)
+		return;
+	
+	if (characterCam == nullptr)
+		return;
+
+	characterCam->SetPosOffset(false, amount * 0.01);
+}
+
+
+
 void AFirstGameGameModeBase::TestButton()
 {
-	myUnit->SetMove(FVector(FMath::FRandRange(-500, 500), FMath::FRandRange(-500, 500), 0));
+	// 코드로 실패...
+	// UMatineeCameraShake* shake = NewObject<UMatineeCameraShake>();
+	// UMyMatineeCameraShake* shake = NewObject<UMyMatineeCameraShake>();
+	// shake->OscillationDuration = 0.25f;
+	// shake->OscillationBlendInTime = 0.5;
+	// shake->OscillationBlendOutTime = 0.5;
+	// shake->RotOscillation.Pitch.Amplitude = FMath::RandRange(5.0f, 10.0f);
+	// shake->RotOscillation.Pitch.Frequency = FMath::RandRange(25.0f, 30.0f);
+	// shake->StartShake(PlayerController->PlayerCameraManager, 2, ECameraShakePlaySpace::World);
+
+	
+	// myUnit->SetMove(FVector(FMath::FRandRange(-500, 500), FMath::FRandRange(-500, 500), 0));
 	/*if (myUnit->GetWeaponType() == WEAPON_TYPE::SINGLE_SWORD)
 	{
 		myUnit->Equip(WEAPON_TYPE::SINGLE_GUN);
@@ -343,6 +379,13 @@ void AFirstGameGameModeBase::TestButton()
 		myUnit->SetAnim(WEAPON_TYPE::SINGLE_SWORD);
 	}*/
 }
+
+void AFirstGameGameModeBase::CamShake()
+{
+	AMyPlayerController* PlayerController = Cast<AMyPlayerController>(GetWorld()->GetFirstPlayerController());
+	PlayerController->ClientStartCameraShake(shake, 1);
+}
+
 
 void AFirstGameGameModeBase::InitPlayerController()
 {
@@ -359,32 +402,9 @@ void AFirstGameGameModeBase::InitPlayerController()
 		InputComponent->BindAction("DefaultSkill", IE_Pressed, myUnit, &AMyUnit::DefaultSkill);
 		InputComponent->BindAction("EvationSkill", IE_Pressed, myUnit, &AMyUnit::EvationSkill);
 		InputComponent->BindAction("TestButton", IE_Pressed, this, &AFirstGameGameModeBase::TestButton);
+		InputComponent->BindAxis("JoyUpDown", this, &AFirstGameGameModeBase::JoyUpDown);
+		InputComponent->BindAxis("JoyLeftRight", this, &AFirstGameGameModeBase::JoyLeftRight);
 	}
-
-	/*
-	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
-
-	if (PlayerController != nullptr)
-	{
-		PlayerController->bAutoManageActiveCameraTarget = false;
-		PlayerController->bShowMouseCursor = true;
-
-		if (characterCam != nullptr)
-			PlayerController->SetViewTarget(characterCam);
-
-		EnableInput(PlayerController);
-
-		InputComponent->BindAxis("Forward", myUnit, &AMyUnit::Forward);
-		InputComponent->BindAxis("Side", myUnit, &AMyUnit::Side);
-		InputComponent->BindAction("WheelUp", IE_Pressed, this, &AFirstGameGameModeBase::ZoomIn);
-		InputComponent->BindAction("WheelDown", IE_Pressed, this, &AFirstGameGameModeBase::ZoomOut);
-		InputComponent->BindAction("DefaultSkill", IE_Pressed, myUnit, &AMyUnit::DefaultSkill);
-		InputComponent->BindAction("EvationSkill", IE_Pressed, myUnit, &AMyUnit::EvationSkill);
-		InputComponent->BindAction("TestButton", IE_Pressed, this, &AFirstGameGameModeBase::TestButton);
-
-		//UPlayerInput::AddEngineDefinedActionMapping(FInputActionKeyMapping("Jump", EKeys::N, 0, 0, 0, 0));
-		//FInputActionKeyMapping jump("Jump", EKeys::SpaceBar, 0, 0, 0, 0);
-	}*/
 }
 
 void AFirstGameGameModeBase::AppearMyPlayer(TSharedPtr<FAnsPCAppearPacket> packet)
@@ -396,7 +416,7 @@ void AFirstGameGameModeBase::AppearMyPlayer(TSharedPtr<FAnsPCAppearPacket> packe
 	
 	myUnit = GetWorld()->SpawnActor<AMyUnit>();
 	
-	characterCam->SetChaseTarget(myUnit, FVector(350, 0, 500), FVector(0, -50, 0), 300);
+	characterCam->SetChaseTarget(myUnit, FVector(-1, 0, 1), FVector(0, 0, 100), 500);
 
 	InitPlayerController();
 
