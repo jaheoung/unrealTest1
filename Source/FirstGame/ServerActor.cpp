@@ -241,7 +241,7 @@ void AServerActor::Tick(float DeltaTime)
 			}
 			else
 			{
-				npcInfo->MoveProcess();
+				npcInfo->MoveProcess(DeltaTime);
 			}
 
 			if (npcInfo->posChanged)

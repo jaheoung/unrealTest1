@@ -158,7 +158,7 @@ void AUnit::Tick(float DeltaTime)
 
 		notNextTickInputRot = false;
 
-		inputVector *= GetMoveSpeed();
+		inputVector *= GetMoveSpeed() * DeltaTime;
 
 		FVector pos = GetActorLocation();
 		pos.X += inputVector.X;

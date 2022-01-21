@@ -35,7 +35,7 @@ protected:
 	TArray<FVector> myPath;
 	int curPathIndex;
 	FVector lastTargetPoint;
-	float moveSpeed = 3.5f;
+	float moveSpeed = 500;
 	class UNavigationSystemV1* navSys;
 	FVector2D inputVector;
 	FVector2D lastInputVector;

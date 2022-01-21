@@ -73,7 +73,7 @@ struct FUnitInfo
 	TArray<FVector> myPath;
 	int curPathIndex;
 	FVector lastTargetPoint;
-	float moveSpeed = 0.9f;
+	float moveSpeed = 250;
 	FVector lastDirNoNormal;
 
 	virtual ~FUnitInfo(){}
@@ -182,7 +182,7 @@ struct FUnitInfo
 		return FMath::RadiansToDegrees(arcRad);
 	}
 
-	void MoveProcess()
+	void MoveProcess(const float& deltaTime)
 	{
 		FVector dir;
 		if (curPathIndex > 0 && curPathIndex < myPath.Num())
@@ -191,8 +191,10 @@ struct FUnitInfo
 			float backZ = nextPos.Z;
 			curPos.Z = nextPos.Z = 0;
 
+			float speed = moveSpeed * deltaTime;
+			
 			FVector dirVec = nextPos - curPos;
-			float checkDis = moveSpeed;
+			float checkDis = speed;
 			checkDis *= checkDis;
 
 			if (dirVec.SizeSquared() <= checkDis)
@@ -205,7 +207,7 @@ struct FUnitInfo
 			else
 			{
 				dirVec.Normalize();
-				nextPos = curPos + (dirVec * moveSpeed);
+				nextPos = curPos + (dirVec * speed);
 				dir = SetPos(nextPos.X, nextPos.Y, backZ).GetSafeNormal();
 				rot = GetRot(dir);
 			}
