@@ -100,8 +100,8 @@ void UMapToolWidget::HeightMapSaveClick()
 	FVector startPoint = FVector(0, 0, 100000);
 	FVector downVec = FVector::DownVector * 150000;
 	
-	FString hpath = FPaths::ProjectDir();
-	hpath.Append(TEXT("heightMap.bin"));
+	FString hpath = FPaths::ProjectContentDir();
+	hpath.Append(TEXT("CustomFiles/heightMap.bin"));
 	std::ofstream heightFile(*hpath, std::ios::out | std::ios::binary);
 
 	heightFile.write((char*)&mapWidth, sizeof(int));
@@ -144,8 +144,8 @@ void UMapToolWidget::PathGridSaveClick()
 	if (toolMesh == nullptr)
 		return;;
 	
-	FString path = FPaths::ProjectDir();
-	path.Append(TEXT("pathGrid.bin"));
+	FString path = FPaths::ProjectContentDir();
+	path.Append(TEXT("CustomFiles/pathGrid.bin"));
 	std::ofstream pathGridFile(*path, std::ios::out | std::ios::binary);
 	
 	// 인게임에서 index 를 읽어 x,y 변환 후 x ~ x+spacing, y ~ y+spacing 을 한 블럭으로 보면 될듯.
@@ -169,8 +169,8 @@ void UMapToolWidget::PathGridLoadClick()
     if (toolMesh == nullptr)
     	return;;
     
-    FString path = FPaths::ProjectDir();
-    path.Append(TEXT("pathGrid.bin"));
+    FString path = FPaths::ProjectContentDir();
+    path.Append(TEXT("CustomFiles/pathGrid.bin"));
     std::ifstream pathGridFile(*path, std::ios::in | std::ios::binary);
 
 	if (pathGridFile.is_open())

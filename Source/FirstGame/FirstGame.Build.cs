@@ -8,7 +8,12 @@ public class FirstGame : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "NavigationSystem", "UMGEditor", "ProceduralMeshComponent" });
+#if WITH_EDITOR
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "UMGEditor", "ProceduralMeshComponent" });
+#else
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "ProceduralMeshComponent" });
+#endif
+
 
         //PrivateDependencyModuleNames.AddRange(new string[] {  });
 

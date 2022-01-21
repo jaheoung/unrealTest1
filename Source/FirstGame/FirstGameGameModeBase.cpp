@@ -26,7 +26,6 @@
 #include "ToolMeshActor.h"
 #include "Blueprint/WidgetTree.h"
 #include "Camera/CameraComponent.h"
-#include "Commandlets/GatherTextCommandlet.h"
 #include "Components/WidgetComponent.h"
 #include "Engine/AssetManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -193,8 +192,8 @@ void AFirstGameGameModeBase::ReadHeightMap()
 {
 	heightMapdatas.Empty();
 
-	FString hpath = FPaths::ProjectDir();
-	hpath.Append(TEXT("heightMap.bin"));
+	FString hpath = FPaths::ProjectContentDir();
+	hpath.Append(TEXT("CustomFiles/heightMap.bin"));
 	std::ifstream readFile(*hpath, std::ios::in | std::ios::binary);
 
 	if (readFile.is_open())

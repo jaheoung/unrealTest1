@@ -139,8 +139,8 @@ namespace pf
 
 	void AStar::loadMap()
 	{
-		FString path = FPaths::ProjectDir();
-		path.Append(TEXT("pathGrid.bin"));
+		FString path = FPaths::ProjectContentDir();
+		path.Append(TEXT("CustomFiles/pathGrid.bin"));
 		std::ifstream pathGridFile(*path, std::ios::in | std::ios::binary);
 		
 		if (pathGridFile.is_open())
@@ -226,6 +226,13 @@ namespace pf
 			   (pos.y >= 0) && (pos.y < m_dimensions.y);
 	}
 
+	bool AStar::isValid(const float& x, const float& y) const
+	{
+		return (x >= 0) && (x < m_dimensions.x) && 
+			   (y >= 0) && (y < m_dimensions.y);
+	}
+
+
 	bool AStar::isBlocked(int index) const
 	{
 		return (m_grid[index] == 0);
@@ -237,8 +244,14 @@ namespace pf
 		return (pos.x * m_dimensions.x) + pos.y;
 	}
 
-	bool AStar::CanPos(const float& x, const float& y)
+	bool AStar::CanPos(const float& _x, const float& _y)
 	{
+		int x = _x / compressionSize;
+		int y = _y / compressionSize;
+		
+		if (isValid(x, y) == false)
+			return false;
+		
 		return !isBlocked(convertTo1D(Vec2i(x / compressionSize, y / compressionSize)));
 	}
 

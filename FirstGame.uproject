@@ -12,7 +12,6 @@
 				"Engine",
 				"UMG",
 				"CoreUObject",
-				"Blutility",
 				"ProceduralMeshComponent",
 				"GameplayCameras"
 			]

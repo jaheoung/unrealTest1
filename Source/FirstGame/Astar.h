@@ -53,11 +53,12 @@ namespace pf
 		int compressionSize;
 		std::vector<int> m_grid;
 
-		bool CanPos(const float& x, const float& y);
+		bool CanPos(const float& _x, const float& _y);
 
 	private:
 		std::vector<Vec2i> buildPath() const;
 		bool isValid(const Vec2i& pos) const;
+		bool isValid(const float& x, const float& y) const;
 		bool isBlocked(int index) const;
 		int convertTo1D(const Vec2i& pos) const;
 
