@@ -61,7 +61,8 @@ public:
 
 	TSubclassOf<UMainWidget> mainWidgetClass;
 	UMainWidget* mainWidget;
-	
+
+	UPROPERTY()
 	TMap<WIDGET_TYPE, TSubclassOf<UUserWidget>> uiWidgetClassMap;
 	TMap<WIDGET_TYPE, UUserWidget*> uiWidgetMap;
 	
